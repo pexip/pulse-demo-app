@@ -27,7 +27,13 @@ namespace PulseDemoApp
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            // In production scenarios, it is recommended to use Microsoft.Extensions.DependencyInjection
+            // to register services and view models, and to resolve the initial MainWindow through the
+            // service provider. This sample omits that setup to keep the code simple and focused on
+            // illustrating WinUI-specific functionality.
             _window = new MainWindow();
+            _window.Content = new ShellPage(new ShellViewModel());
+
             _window.Activate();
         }
     }
