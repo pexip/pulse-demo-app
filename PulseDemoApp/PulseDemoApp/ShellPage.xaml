@@ -69,29 +69,26 @@
           Spacing="12">
           <TextBox
             Width="240"
-            PlaceholderText="Video Address" />
+            PlaceholderText="name.lastname@example.com"
+            Text="{x:Bind ViewModel.VideoAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
           <Button
             MinWidth="160"
+            Command="{x:Bind ViewModel.RegisterCommand}"
             Content="Register" />
         </StackPanel>
 
       </Border>
 
-      <Border
-        x:Name="DisabledOverlay"
-        Style="{StaticResource DisabledOverlayStyle}"
-        Visibility="Collapsed" />
-
     </Grid>
 
-    <!-- Joining Options card -->
+    <!-- Join card -->
     <Grid
       Grid.Row="0"
       Grid.Column="1">
 
       <TextBlock
         Style="{StaticResource CardHeaderStyle}"
-        Text="Joining Options" />
+        Text="Join" />
 
       <Border Style="{StaticResource CardBorderStyle}">
 
@@ -105,6 +102,10 @@
         </StackPanel>
 
       </Border>
+
+      <Border
+        Style="{StaticResource DisabledOverlayStyle}"
+        Visibility="{x:Bind ViewModel.JoinCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
 
     </Grid>
 
@@ -115,7 +116,7 @@
 
       <TextBlock
         Style="{StaticResource CardHeaderStyle}"
-        Text="Pin" />
+        Text="Host Pin" />
 
       <Border Style="{StaticResource CardBorderStyle}">
 
@@ -128,6 +129,10 @@
         </StackPanel>
 
       </Border>
+
+      <Border
+        Style="{StaticResource DisabledOverlayStyle}"
+        Visibility="{x:Bind ViewModel.HostPinCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
 
     </Grid>
 
@@ -151,6 +156,10 @@
         </StackPanel>
 
       </Border>
+
+      <Border
+        Style="{StaticResource DisabledOverlayStyle}"
+        Visibility="{x:Bind ViewModel.ConferenceCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
 
     </Grid>
 
