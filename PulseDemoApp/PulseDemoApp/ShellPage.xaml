@@ -4,4 +4,156 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-  mc:Ignorable="d" />
+  mc:Ignorable="d">
+
+  <Page.Resources>
+
+    <Style
+      x:Key="CardHeaderStyle"
+      TargetType="TextBlock">
+      <Setter Property="IsTextSelectionEnabled" Value="True" />
+      <Setter Property="Margin" Value="12 0 0 0" />
+      <Setter Property="Padding" Value="8 0" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style
+      x:Key="CardBorderStyle"
+      TargetType="Border">
+      <Setter Property="Margin" Value="0 10 0 0" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+
+    <Style
+      x:Key="DisabledOverlayStyle"
+      TargetType="Border">
+      <Setter Property="Background" Value="#BBeff4f9" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+      <Setter Property="Visibility" Value="Visible" />
+    </Style>
+
+  </Page.Resources>
+
+  <Grid
+    Padding="16"
+    ColumnSpacing="12"
+    RowSpacing="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Registration card -->
+    <Grid
+      Grid.Row="0"
+      Grid.Column="0">
+
+      <TextBlock
+        Style="{StaticResource CardHeaderStyle}"
+        Text="Registration" />
+
+      <Border Style="{StaticResource CardBorderStyle}">
+
+        <StackPanel
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="12">
+          <TextBox
+            Width="240"
+            PlaceholderText="Video Address" />
+          <Button
+            MinWidth="160"
+            Content="Register" />
+        </StackPanel>
+
+      </Border>
+
+      <Border
+        x:Name="DisabledOverlay"
+        Style="{StaticResource DisabledOverlayStyle}"
+        Visibility="Collapsed" />
+
+    </Grid>
+
+    <!-- Joining Options card -->
+    <Grid
+      Grid.Row="0"
+      Grid.Column="1">
+
+      <TextBlock
+        Style="{StaticResource CardHeaderStyle}"
+        Text="Joining Options" />
+
+      <Border Style="{StaticResource CardBorderStyle}">
+
+        <StackPanel
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="12">
+          <!-- Card Content -->
+
+        </StackPanel>
+
+      </Border>
+
+    </Grid>
+
+    <!-- Host Pin card -->
+    <Grid
+      Grid.Row="1"
+      Grid.Column="0">
+
+      <TextBlock
+        Style="{StaticResource CardHeaderStyle}"
+        Text="Pin" />
+
+      <Border Style="{StaticResource CardBorderStyle}">
+
+        <StackPanel
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="12">
+          <!-- Card Content -->
+        </StackPanel>
+
+      </Border>
+
+    </Grid>
+
+    <!-- Conference card -->
+    <Grid
+      Grid.Row="1"
+      Grid.Column="1">
+
+      <TextBlock
+        Style="{StaticResource CardHeaderStyle}"
+        Text="Conference" />
+
+      <Border Style="{StaticResource CardBorderStyle}">
+
+        <StackPanel
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Orientation="Horizontal"
+          Spacing="12">
+          <!-- Card Content -->
+        </StackPanel>
+
+      </Border>
+
+    </Grid>
+
+  </Grid>
+
+</Page>
