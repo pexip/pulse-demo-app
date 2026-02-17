@@ -3,7 +3,7 @@ using PulseDemoApp.Validation;
 
 namespace PulseDemoApp;
 
-public partial class ShellViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject
 {
     #region Properties
 
@@ -22,7 +22,7 @@ public partial class ShellViewModel : ObservableObject
 
     #endregion
 
-    public ShellViewModel()
+    public MainViewModel()
     {
         this.videoAddress = string.Empty;
     }

@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Page Update="ShellPage.xaml">
+    <Page Update="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

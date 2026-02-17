@@ -32,7 +32,7 @@ namespace PulseDemoApp
             // service provider. This sample omits that setup to keep the code simple and focused on
             // illustrating WinUI-specific functionality.
             _window = new MainWindow();
-            _window.Content = new ShellPage(new ShellViewModel());
+            _window.Content = new MainPage(new MainViewModel());
 
             _window.Activate();
         }

@@ -13,6 +13,6 @@
     <MicaBackdrop />
   </Window.SystemBackdrop>
 
-  <!-- ...ShellPage injected here... -->
+  <!-- ...MainPage injected here... -->
 
 </Window>
