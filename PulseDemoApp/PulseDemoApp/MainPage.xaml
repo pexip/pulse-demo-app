@@ -64,17 +64,22 @@
 
         <StackPanel
           HorizontalAlignment="Center"
-          VerticalAlignment="Center"
-          Orientation="Horizontal"
-          Spacing="12">
-          <TextBox
-            Width="240"
-            PlaceholderText="name.lastname@example.com"
-            Text="{x:Bind ViewModel.VideoAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-          <Button
-            MinWidth="160"
-            Command="{x:Bind ViewModel.RegisterCommand}"
-            Content="Register" />
+          VerticalAlignment="Center">
+          <StackPanel
+            Orientation="Horizontal"
+            Spacing="12">
+            <TextBox
+              Width="240"
+              PlaceholderText="name.lastname@example.com"
+              Text="{x:Bind ViewModel.VideoAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button
+              MinWidth="160"
+              Command="{x:Bind ViewModel.RegisterCommand}"
+              Content="Register" />
+          </StackPanel>
+          <TextBlock
+            HorizontalAlignment="Center"
+            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay}" />
         </StackPanel>
 
       </Border>

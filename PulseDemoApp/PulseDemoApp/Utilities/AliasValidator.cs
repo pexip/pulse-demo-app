@@ -2,7 +2,7 @@
 // Copyright (c) Pexip. All rights reserved.
 // </copyright>
 
-namespace PulseDemoApp.Validation;
+namespace PulseDemoApp.Utilities;
 
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

@@ -30,7 +30,8 @@
   </Resources>
 
   <Applications>
-    <Application Id="App"
+    <Application 
+      Id="PexipDemoApp"
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
@@ -42,6 +43,18 @@
         <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Images\SplashScreen.png" />
       </uap:VisualElements>
+
+      <Extensions>
+        
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="pexip-auth">
+            <uap:Logo>Images\StoreLogo.png</uap:Logo>
+            <uap:DisplayName>Pexip Authentication Protocol</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+        
+      </Extensions>
+
     </Application>
   </Applications>
 
