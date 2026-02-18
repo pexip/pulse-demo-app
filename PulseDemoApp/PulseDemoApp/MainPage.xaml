@@ -36,6 +36,14 @@
       <Setter Property="Visibility" Value="Visible" />
     </Style>
 
+    <Style
+      x:Key="ButtonStyle"
+      TargetType="Button">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Height" Value="30"/>
+    </Style>
+
   </Page.Resources>
 
   <Grid
@@ -100,10 +108,41 @@
         <StackPanel
           HorizontalAlignment="Center"
           VerticalAlignment="Center"
-          Orientation="Horizontal"
+          Orientation="Vertical"
           Spacing="12">
-          <!-- Card Content -->
 
+          <!-- Camera Preview -->
+          <Grid Height="200" Width="300" Background="DimGray">
+            <TextBlock
+              Text="Camera Preview"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center" />
+          </Grid>
+
+          <!-- Devices -->
+          <StackPanel Spacing="12" Width="300" HorizontalAlignment="Left">
+            <ComboBox PlaceholderText="Camera" 
+                      ItemsSource="{x:Bind ViewModel.Cameras}" 
+                      DisplayMemberPath="Name"
+                      HorizontalAlignment="Stretch"/>
+
+            <ComboBox PlaceholderText="Mic" 
+                      ItemsSource="{x:Bind ViewModel.Mics}"
+                      DisplayMemberPath="Name"
+                      HorizontalAlignment="Stretch"/>
+
+            <ComboBox PlaceholderText="Speakers"
+                      ItemsSource="{x:Bind ViewModel.Speakers}"
+                      DisplayMemberPath="Name"
+                      HorizontalAlignment="Stretch"/>
+
+            <Button Content="Join With Video"
+                    Command="{x:Bind ViewModel.JoinCommand}"
+                    Style="{StaticResource ButtonStyle}" 
+                    Background="Green"/>
+
+          </StackPanel>
+          
         </StackPanel>
 
       </Border>

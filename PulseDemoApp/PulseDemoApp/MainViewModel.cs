@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
+using PulseDemoApp.Devices;
 using Microsoft.UI.Dispatching;
 using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
@@ -32,12 +33,26 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string registrationProgress;
 
+    [ObservableProperty]
+    private MediaDevice[] cameras;
+
+    [ObservableProperty]
+    private MediaDevice[] mics;
+
+    [ObservableProperty]
+    private MediaDevice[] speakers;
     #endregion
 
     public MainViewModel()
     {
-        this.pulseInstance = PulseConnect.pulse_new();
+        this.videoAddress = string.Empty;        
+        intitJoinPage();
+    }
 
+    private void intitJoinPage()
+    {       
+        // this.pulseInstance = PulseConnect.pulse_new();
+        joinCardEnabled = true;
         this.videoAddress = "paul.enascut@nightly.pexip.com";
     }
 
@@ -49,6 +64,11 @@ public partial class MainViewModel : ObservableObject
         JoinCardEnabled = await RegisterWithSsoAsync();
     }
 
+    [RelayCommand(CanExecute = nameof(CanJoin))]
+    private async Task Join()
+    {
+
+    }
     #endregion
 
     #region Command Validations
@@ -56,6 +76,10 @@ public partial class MainViewModel : ObservableObject
     private bool CanRegister()
     {
         return new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
+    }
+    private bool CanJoin()
+    {
+        return true;
     }
 
     #endregion
