@@ -1,23 +1,27 @@
 using CommunityToolkit.Mvvm.Input;
-using PulseDemoApp.Devices;
 using Microsoft.UI.Dispatching;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
+
+using Pexip.Pulse.NativeDelegates;
 using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
+using PulseDemoApp.Devices;
 using PulseDemoApp.Utilities;
-using System.Diagnostics;
-using System.Text;
 
 namespace PulseDemoApp;
 
 public partial class MainViewModel : ObservableObject
 {
     private readonly DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-    private readonly IntPtr pulseInstance;
+    private readonly IntPtr pulseInstance = PulseConnect.pulse_new();
 
     #region Properties
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
     private bool joinCardEnabled;
 
     [ObservableProperty]
@@ -50,10 +54,27 @@ public partial class MainViewModel : ObservableObject
     }
 
     private void intitJoinPage()
-    {       
-        // this.pulseInstance = PulseConnect.pulse_new();
-        joinCardEnabled = true;
-        this.videoAddress = "paul.enascut@nightly.pexip.com";
+    {        
+        VideoAddress = "sunjay.kalsi@nightly.pexip.com";
+    }
+
+    private void ReadVideoDevices()
+    {
+        var devices = new List<MediaDevice>();
+
+        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(pulseInstance,
+            PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_OUTPUT, out IntPtr p_iterator);
+
+        PulseDeviceIteratorFunc appendDevice = (device, user_context) =>
+        {
+            devices.Add(new MediaDevice(device.id, device.name, true, true));
+        };
+
+        pulseError = PulseDevices.pulse_device_iterator_foreach(p_iterator, appendDevice, IntPtr.Zero); // in the PulseClient the last param is "pinnedDevices.Ptr" - I don't know what that is
+
+        Debug.Print(devices.Count > 0 ? $"Found {devices.Count} video devices" : "No video devices found");
+
+        PulseDevices.pulse_device_iterator_free(p_iterator);
     }
 
     #region Commands
@@ -62,12 +83,16 @@ public partial class MainViewModel : ObservableObject
     private async Task RegisterAsync()
     {
         JoinCardEnabled = await RegisterWithSsoAsync();
+
+        if (JoinCardEnabled)
+        {
+            ReadVideoDevices();
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
     private async Task Join()
     {
-
     }
     #endregion
 
@@ -77,11 +102,7 @@ public partial class MainViewModel : ObservableObject
     {
         return new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
     }
-    private bool CanJoin()
-    {
-        return true;
-    }
-
+    private bool CanJoin() => JoinCardEnabled;
     #endregion
 
     private async Task<bool> RegisterWithSsoAsync()
