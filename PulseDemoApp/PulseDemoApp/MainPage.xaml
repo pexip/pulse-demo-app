@@ -86,7 +86,8 @@
               Content="Register" />
           </StackPanel>
           <TextBlock
-            HorizontalAlignment="Center"
+            HorizontalAlignment="Left"
+            Margin="0 10 0 0"
             Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay}" />
         </StackPanel>
 
@@ -122,17 +123,17 @@
           <!-- Devices -->
           <StackPanel Spacing="12" Width="300" HorizontalAlignment="Left">
             <ComboBox PlaceholderText="Camera" 
-                      ItemsSource="{x:Bind ViewModel.Cameras}" 
+                      ItemsSource="{x:Bind ViewModel.Cameras, Mode=OneWay}" 
                       DisplayMemberPath="Name"
                       HorizontalAlignment="Stretch"/>
 
             <ComboBox PlaceholderText="Mic" 
-                      ItemsSource="{x:Bind ViewModel.Mics}"
+                      ItemsSource="{x:Bind ViewModel.Mics, Mode=OneWay}"
                       DisplayMemberPath="Name"
                       HorizontalAlignment="Stretch"/>
 
             <ComboBox PlaceholderText="Speakers"
-                      ItemsSource="{x:Bind ViewModel.Speakers}"
+                      ItemsSource="{x:Bind ViewModel.Speakers, Mode=OneWay}"
                       DisplayMemberPath="Name"
                       HorizontalAlignment="Stretch"/>
 

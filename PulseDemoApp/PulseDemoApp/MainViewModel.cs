@@ -45,6 +45,7 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private MediaDevice[] speakers;
+    private nint userContext;
     #endregion
 
     public MainViewModel()
@@ -58,21 +59,31 @@ public partial class MainViewModel : ObservableObject
         VideoAddress = "sunjay.kalsi@nightly.pexip.com";
     }
 
-    private void ReadVideoDevices()
+    private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
     {
         var devices = new List<MediaDevice>();
 
-        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(pulseInstance,
-            PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_OUTPUT, out IntPtr p_iterator);
+        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator);
 
-        PulseDeviceIteratorFunc appendDevice = (device, user_context) =>
+        PulseDeviceIteratorFunc addDevice = (device, user_context) =>
         {
             devices.Add(new MediaDevice(device.id, device.name, true, true));
         };
 
-        pulseError = PulseDevices.pulse_device_iterator_foreach(p_iterator, appendDevice, IntPtr.Zero); // in the PulseClient the last param is "pinnedDevices.Ptr" - I don't know what that is
+        pulseError = PulseDevices.pulse_device_iterator_foreach(p_iterator, addDevice, 0);
 
-        Debug.Print(devices.Count > 0 ? $"Found {devices.Count} video devices" : "No video devices found");
+        if (mediaType == PulseMediaType.PULSE_MEDIA_VIDEO && mediaDirection == PulseMediaDirection.PULSE_MEDIA_INPUT)
+        {
+            Cameras = (Cameras ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
+        }
+        else if (mediaType == PulseMediaType.PULSE_MEDIA_AUDIO && mediaDirection == PulseMediaDirection.PULSE_MEDIA_INPUT)
+        {
+            Mics = (Mics ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
+        }
+        else if (mediaType == PulseMediaType.PULSE_MEDIA_AUDIO && mediaDirection == PulseMediaDirection.PULSE_MEDIA_OUTPUT)
+        {
+            Speakers = (Speakers ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
+        }
 
         PulseDevices.pulse_device_iterator_free(p_iterator);
     }
@@ -86,7 +97,9 @@ public partial class MainViewModel : ObservableObject
 
         if (JoinCardEnabled)
         {
-            ReadVideoDevices();
+            ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+            ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+            ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
         }
     }
 
@@ -157,6 +170,7 @@ public partial class MainViewModel : ObservableObject
                     if (err != PulseErrorType.PULSE_SUCCESS)
                     {
                         promise.TrySetResult(false);
+//                        this.userContext = user_context; // read it in - and try and use it for the devices
                     }
                 }
             },
