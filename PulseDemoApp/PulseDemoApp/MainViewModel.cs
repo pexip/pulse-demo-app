@@ -25,7 +25,7 @@ public partial class MainViewModel : ObservableObject
     private bool joinCardEnabled;
 
     [ObservableProperty]
-    private bool hostPinCardEnabled;
+    private bool metingAliasCardEnabled;
 
     [ObservableProperty]
     private bool conferenceCardEnabled;

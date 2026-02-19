@@ -154,14 +154,14 @@
 
     </Grid>
 
-    <!-- Host Pin card -->
+    <!-- Meeting Alias card -->
     <Grid
       Grid.Row="1"
       Grid.Column="0">
 
       <TextBlock
         Style="{StaticResource CardHeaderStyle}"
-        Text="Host Pin" />
+        Text="Meeting Alias" />
 
       <Border Style="{StaticResource CardBorderStyle}">
 
@@ -177,7 +177,7 @@
 
       <Border
         Style="{StaticResource DisabledOverlayStyle}"
-        Visibility="{x:Bind ViewModel.HostPinCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
+        Visibility="{x:Bind ViewModel.MetingAliasCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
 
     </Grid>
 
