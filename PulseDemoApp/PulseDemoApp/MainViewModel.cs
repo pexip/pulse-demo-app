@@ -1,15 +1,16 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.WinUI.Helpers;
 using Microsoft.UI.Dispatching;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-
 using Pexip.Pulse.NativeDelegates;
 using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
 using PulseDemoApp.Devices;
 using PulseDemoApp.Utilities;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace PulseDemoApp;
 
@@ -45,7 +46,11 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private MediaDevice[] speakers;
+
+    private nint VideoHandle;
+
     private nint userContext;
+    private Microsoft.UI.Xaml.Controls.SwapChainPanel? cameraPreviewPanel;
     #endregion
 
     public MainViewModel()
@@ -91,15 +96,59 @@ public partial class MainViewModel : ObservableObject
     #region Commands
 
     [RelayCommand(CanExecute = nameof(CanRegister))]
-    private async Task RegisterAsync()
+    private async Task RegisterAsync(Microsoft.UI.Xaml.Controls.SwapChainPanel? panel)
     {
         JoinCardEnabled = await RegisterWithSsoAsync();
 
-        if (JoinCardEnabled)
+        if (JoinCardEnabled && panel != null)
         {
+            cameraPreviewPanel = panel;
             ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
             ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
             ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
+            VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 300, 300, 0xFF000000);
+            BindHandle(VideoHandle);
+        }
+    }
+
+    [ComImport]
+    [Guid("63aad0b8-7c24-40ff-85a8-640d944cc325")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public partial interface ISwapChainPanelNative
+    {
+        [PreserveSig]
+        uint SetSwapChain([In] IntPtr swapChain);
+    }
+
+    private void BindHandle(/* IDXGISwapChain1 */ IntPtr swapChainPtr)
+    {
+        try
+        {
+            // Debug.WriteLine("Binding video handle : 0x{0:X}", swapChainPtr);
+            // Cast SwapChainPanel to IInspectable (IInspectable is the base interface for XAML objects in C++)
+            var panelObj = Marshal.GetIUnknownForObject(cameraPreviewPanel!);
+
+            // Query for ISwapChainPanelNative from the native object
+            var guid = typeof(ISwapChainPanelNative).GUID;
+            IntPtr panelPtr;
+            Marshal.QueryInterface(panelObj, ref guid, out panelPtr);
+
+            // Cast the returned pointer to ISwapChainPanelNative
+            var panelNative = (ISwapChainPanelNative)Marshal.GetObjectForIUnknown(panelPtr);
+
+            // Call SetSwapChain with your swap chain pointer
+            panelNative.SetSwapChain(swapChainPtr);
+
+            // Release the COM objects
+            Marshal.Release(panelObj);
+            Marshal.Release(panelPtr);
+        }
+        catch (Exception ex)
+        {
+            // this.logger.Error(ex.ToString());
+        }
+        finally
+        {
         }
     }
 

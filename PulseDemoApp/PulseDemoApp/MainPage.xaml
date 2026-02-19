@@ -83,6 +83,7 @@
             <Button
               MinWidth="160"
               Command="{x:Bind ViewModel.RegisterCommand}"
+              CommandParameter="{x:Bind CameraPreview}"
               Content="Register" />
           </StackPanel>
           <TextBlock
@@ -113,12 +114,14 @@
           Spacing="12">
 
           <!-- Camera Preview -->
-          <Grid Height="200" Width="300" Background="DimGray">
-            <TextBlock
-              Text="Camera Preview"
+          <Border Background="Gray">
+            <SwapChainPanel
+              x:Name="CameraPreview"              
+              Height="200"
+              Width="300"
               HorizontalAlignment="Center"
               VerticalAlignment="Center" />
-          </Grid>
+          </Border>
 
           <!-- Devices -->
           <StackPanel Spacing="12" Width="300" HorizontalAlignment="Left">
