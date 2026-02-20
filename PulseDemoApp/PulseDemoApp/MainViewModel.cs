@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.WinUI.Helpers;
 using Microsoft.UI.Dispatching;
 using Pexip.Pulse.NativeDelegates;
 using Pexip.Pulse.NativeEnums;
@@ -61,7 +60,6 @@ public partial class MainViewModel : ObservableObject
 
     private void intitJoinPage()
     {        
-        VideoAddress = "sunjay.kalsi@nightly.pexip.com";
     }
 
     private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
