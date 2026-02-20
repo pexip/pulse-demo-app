@@ -117,6 +117,7 @@ public partial class MainViewModel : ObservableObject
             ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
             VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 300, 300, 0xFF000000);
             BindHandle(VideoHandle);
+            BindCamera();
         }
     }
 
@@ -129,11 +130,31 @@ public partial class MainViewModel : ObservableObject
         uint SetSwapChain([In] IntPtr swapChain);
     }
 
+    private void BindCamera()
+    {
+        // Connect the camera device to the session
+        if (Cameras != null && Cameras.Length > 0)
+        {
+            PulseDevice camera = new PulseDevice
+            {
+                id = (uint)Cameras.First().Uid,
+                name = Cameras.First().Name,
+                media_direction = PulseMediaDirection.PULSE_MEDIA_INPUT,
+                media_type = PulseMediaType.PULSE_MEDIA_VIDEO,
+                is_default = Cameras.First().IsDefault ? 1 : 0,
+            };
+
+            var pulseError = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, camera, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW);
+            Debug.WriteLine("Connecting camera device : {0}, error code : {1}", camera.name, pulseError);
+        }
+
+    }
+
     private void BindHandle(/* IDXGISwapChain1 */ IntPtr swapChainPtr)
     {
         try
         {
-            // Debug.WriteLine("Binding video handle : 0x{0:X}", swapChainPtr);
+             Debug.WriteLine("Binding video handle : 0x{0:X}", swapChainPtr);
             // Cast SwapChainPanel to IInspectable (IInspectable is the base interface for XAML objects in C++)
             var panelObj = Marshal.GetIUnknownForObject(cameraPreviewPanel!);
 
