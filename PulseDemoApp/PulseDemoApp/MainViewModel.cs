@@ -6,6 +6,7 @@ using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
 using PulseDemoApp.Devices;
 using PulseDemoApp.Utilities;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -21,11 +22,11 @@ public partial class MainViewModel : ObservableObject
     #region Properties
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
-    private bool joinCardEnabled;
+    private bool metingAliasCardEnabled;
 
     [ObservableProperty]
-    private bool metingAliasCardEnabled;
+    [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
+    private bool joinCardEnabled;
 
     [ObservableProperty]
     private bool conferenceCardEnabled;
@@ -46,6 +47,10 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private MediaDevice[] speakers;
 
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ContinueCommand))]
+    private string videoAlias;
+
     private nint VideoHandle;
 
     private nint userContext;
@@ -54,12 +59,12 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
-        this.videoAddress = string.Empty;        
+        this.videoAddress = string.Empty;
         intitJoinPage();
     }
 
     private void intitJoinPage()
-    {        
+    {
     }
 
     private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
@@ -94,9 +99,15 @@ public partial class MainViewModel : ObservableObject
     #region Commands
 
     [RelayCommand(CanExecute = nameof(CanRegister))]
-    private async Task RegisterAsync(Microsoft.UI.Xaml.Controls.SwapChainPanel? panel)
+    private async Task RegisterAsync()
     {
-        JoinCardEnabled = await RegisterWithSsoAsync();
+        MetingAliasCardEnabled = await RegisterWithSsoAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanContinue))]
+    private void Continue(Microsoft.UI.Xaml.Controls.SwapChainPanel? panel)
+    {
+        JoinCardEnabled = true;
 
         if (JoinCardEnabled && panel != null)
         {
@@ -162,6 +173,12 @@ public partial class MainViewModel : ObservableObject
     {
         return new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
     }
+
+    private bool CanContinue()
+    {
+        return VideoAlias != null && new AliasValidator().ValidateRegisteredAlias(VideoAlias);
+    }
+
     private bool CanJoin() => JoinCardEnabled;
     #endregion
 
@@ -216,8 +233,9 @@ public partial class MainViewModel : ObservableObject
                 {
                     if (err != PulseErrorType.PULSE_SUCCESS)
                     {
+                        this.dispatcherQueue.TryEnqueue(() => RegistrationProgress = $"{PulseError.pulse_strerror(err).ToString(Encoding.ASCII)}");
                         promise.TrySetResult(false);
-//                        this.userContext = user_context; // read it in - and try and use it for the devices
+                        //                        this.userContext = user_context; // read it in - and try and use it for the devices
                     }
                 }
             },
