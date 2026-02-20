@@ -41,7 +41,7 @@
       TargetType="Button">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="CornerRadius" Value="6" />
-      <Setter Property="Height" Value="30" />
+      <Setter Property="Height" Value="36" />
     </Style>
 
   </Page.Resources>
@@ -77,7 +77,7 @@
             Orientation="Horizontal"
             Spacing="12">
             <TextBox
-              Width="240"
+              Width="340"
               PlaceholderText="name.lastname@example.com"
               Text="{x:Bind ViewModel.VideoAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button
@@ -88,7 +88,7 @@
           <TextBlock
             Margin="0 10 0 0"
             HorizontalAlignment="Left"
-            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay}" />
+            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay, TargetNullValue='Unregistered'}"/>
         </StackPanel>
 
       </Border>
@@ -111,14 +111,14 @@
           VerticalAlignment="Center"
           Spacing="12">
           <TextBox
-            Width="240"
+            Width="340"
             PlaceholderText="video alias"
             Text="{x:Bind ViewModel.VideoAlias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
           <Button
             MinWidth="160"
             HorizontalAlignment="Center"
             Command="{x:Bind ViewModel.ContinueCommand}"
-            CommandParameter="{x:Bind CameraPreview}"
+            CommandParameter="{x:Bind CameraPreviewVideo}"
             Content="Continue" />
         </StackPanel>
 
@@ -150,7 +150,7 @@
           <!-- Camera Preview -->
           <Border Background="Gray">
             <SwapChainPanel
-              x:Name="CameraPreview"
+              x:Name="CameraPreviewVideo"
               Width="300"
               Height="200"
               HorizontalAlignment="Center"
@@ -209,13 +209,22 @@
 
       <Border Style="{StaticResource CardBorderStyle}">
 
-        <StackPanel
-          HorizontalAlignment="Center"
-          VerticalAlignment="Center"
-          Orientation="Horizontal"
-          Spacing="12">
-          <!-- Card Content -->
-        </StackPanel>
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <!-- Conference Camera  -->
+          <Border Background="Gray" Grid.Row="0">
+            <SwapChainPanel
+              x:Name="ConferenceVideo"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch" />
+          </Border>
+          
+          <Button Content="Leave" Grid.Row="1" Style="{StaticResource ButtonStyle}" Width="200" Margin="0 12 0 0" Background="Red"/>
+        </Grid>
 
       </Border>
 
