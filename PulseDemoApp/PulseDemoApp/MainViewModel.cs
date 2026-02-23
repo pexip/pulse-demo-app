@@ -201,7 +201,51 @@ public partial class MainViewModel : ObservableObject
     }
 
     private bool CanJoin() => JoinCardEnabled;
+
+    [RelayCommand]
+    private void ResizeSelfPrimary(SizeInt32 size)
+    {
+        if (VideoAlias != null)
+        {
+            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoHandle, size.Width, size.Height);
+            if (error != PulseErrorType.PULSE_SUCCESS)
+            {
+                Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
+            }
+        }
+    }
+
     #endregion
+
+    partial void OnSelectedCameraDeviceChanged(MediaDevice? value)
+    {
+        if (value != null && JoinCardEnabled)
+        {
+            Debug.WriteLine($"DEBUG - Camera selection changed to: {value.Name} (ID: {value.Uid})");
+
+            PulseDevice selectedDevice = new PulseDevice
+            {
+                id = value.Uid,
+                name = value.Name,
+                media_type = value.MediaType,
+                media_direction = value.MediaDirection,
+                on_list = value.OnList,
+                is_default = value.IsDefault ? 1 : 0
+            };
+
+            PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+
+            if (error == PulseErrorType.PULSE_SUCCESS)
+            {
+                Debug.WriteLine($"DEBUG - Successfully connected to camera device: {value.Name}");
+            }
+            else
+            {
+                Debug.WriteLine($"DEBUG - Failed to connect camera device: {PulseError.pulse_strerror(error)}");
+            }
+        }
+    }
+
 
     private async Task<bool> RegisterWithSsoAsync()
     {

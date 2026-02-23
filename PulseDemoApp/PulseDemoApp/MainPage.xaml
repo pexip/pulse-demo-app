@@ -163,9 +163,11 @@
             HorizontalAlignment="Left"
             Spacing="12">
             <ComboBox
+              x:Name="CameraComboBox"
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Cameras, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedCameraDevice, Mode=TwoWay}"
               PlaceholderText="Camera" />
 
             <ComboBox
