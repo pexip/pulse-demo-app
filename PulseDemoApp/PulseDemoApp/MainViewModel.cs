@@ -6,11 +6,10 @@ using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
 using PulseDemoApp.Devices;
 using PulseDemoApp.Utilities;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
+using Windows.Graphics;
 
 namespace PulseDemoApp;
 
@@ -20,6 +19,16 @@ public partial class MainViewModel : ObservableObject
     private readonly IntPtr pulseInstance = PulseConnect.pulse_new();
 
     #region Properties
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelfPrimaryActive))]
+    private MediaDevice? selectedCameraDevice;
+
+    [ObservableProperty]
+    private IntPtr selfPrimaryHandle;
+
+    [ObservableProperty]
+    private bool selfPrimaryActive;
 
     [ObservableProperty]
     private bool metingAliasCardEnabled;
@@ -55,10 +64,12 @@ public partial class MainViewModel : ObservableObject
 
     private nint userContext;
     private Microsoft.UI.Xaml.Controls.SwapChainPanel? cameraPreviewPanel;
+
     #endregion
 
     public MainViewModel()
     {
+        SelfPrimaryActive = true;
         this.videoAddress = string.Empty;
         intitJoinPage();
     }
@@ -75,7 +86,7 @@ public partial class MainViewModel : ObservableObject
 
         PulseDeviceIteratorFunc addDevice = (device, user_context) =>
         {
-            devices.Add(new MediaDevice(device.id, device.name, true, true));
+            devices.Add(new MediaDevice(device.id, device.name, device.media_type, device.media_direction, device.on_list, device.is_default !=0, true));
         };
 
         pulseError = PulseDevices.pulse_device_iterator_foreach(p_iterator, addDevice, 0);
@@ -105,82 +116,44 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanContinue))]
-    private void Continue(Microsoft.UI.Xaml.Controls.SwapChainPanel? panel)
+    private void Continue()
     {
         JoinCardEnabled = true;
 
-        if (JoinCardEnabled && panel != null)
+        if (JoinCardEnabled)
         {
-            cameraPreviewPanel = panel;
             ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
             ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
             ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
-            VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 300, 300, 0xFF000000);
-            BindHandle(VideoHandle);
-            BindCamera();
-        }
-    }
+            VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
 
-    [ComImport]
-    [Guid("63aad0b8-7c24-40ff-85a8-640d944cc325")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public partial interface ISwapChainPanelNative
-    {
-        [PreserveSig]
-        uint SetSwapChain([In] IntPtr swapChain);
-    }
+            this.SelfPrimaryHandle = VideoHandle;
 
-    private void BindCamera()
-    {
-        // Connect the camera device to the session
-        if (Cameras != null && Cameras.Length > 0)
-        {
-            PulseDevice camera = new PulseDevice
+            Debug.WriteLine($"DEBUG - Setting video handle: {this.SelfPrimaryHandle}");
+
+            if (SelectedCameraDevice == null)
             {
-                id = (uint)Cameras.First().Uid,
-                name = Cameras.First().Name,
-                media_direction = PulseMediaDirection.PULSE_MEDIA_INPUT,
-                media_type = PulseMediaType.PULSE_MEDIA_VIDEO,
-                is_default = Cameras.First().IsDefault ? 1 : 0,
+                Debug.WriteLine("DEBUG - No camera device selected");
+                return;
+            }
+
+            PulseDevice selectedDevice = new PulseDevice
+            {
+                id = SelectedCameraDevice!.Uid,
+                name = SelectedCameraDevice!.Name,
+                media_type = SelectedCameraDevice!.MediaType,
+                media_direction = SelectedCameraDevice!.MediaDirection,
+                on_list = SelectedCameraDevice!.OnList,
+                is_default = SelectedCameraDevice!.IsDefault ? 1 : 0
             };
 
-            var pulseError = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, camera, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW);
-            Debug.WriteLine("Connecting camera device : {0}, error code : {1}", camera.name, pulseError);
-        }
+            PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
 
-    }
-
-    private void BindHandle(/* IDXGISwapChain1 */ IntPtr swapChainPtr)
-    {
-        try
-        {
-             Debug.WriteLine("Binding video handle : 0x{0:X}", swapChainPtr);
-            // Cast SwapChainPanel to IInspectable (IInspectable is the base interface for XAML objects in C++)
-            var panelObj = Marshal.GetIUnknownForObject(cameraPreviewPanel!);
-
-            // Query for ISwapChainPanelNative from the native object
-            var guid = typeof(ISwapChainPanelNative).GUID;
-            IntPtr panelPtr;
-            Marshal.QueryInterface(panelObj, ref guid, out panelPtr);
-
-            // Cast the returned pointer to ISwapChainPanelNative
-            var panelNative = (ISwapChainPanelNative)Marshal.GetObjectForIUnknown(panelPtr);
-
-            // Call SetSwapChain with your swap chain pointer
-            panelNative.SetSwapChain(swapChainPtr);
-
-            // Release the COM objects
-            Marshal.Release(panelObj);
-            Marshal.Release(panelPtr);
-        }
-        catch (Exception ex)
-        {
-            // this.logger.Error(ex.ToString());
-        }
-        finally
-        {
+            Debug.WriteLine($"DEBUG - Connecting to Device: {selectedDevice.name} ID: {selectedDevice.id}");
         }
     }
+
+ 
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
     private async Task Join()
@@ -201,7 +174,51 @@ public partial class MainViewModel : ObservableObject
     }
 
     private bool CanJoin() => JoinCardEnabled;
+
+    [RelayCommand]
+    private void ResizeSelfPrimary(SizeInt32 size)
+    {
+        if (VideoAlias != null)
+        {
+            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoHandle, size.Width, size.Height);
+            if (error != PulseErrorType.PULSE_SUCCESS)
+            {
+                Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
+            }
+        }
+    }
+
     #endregion
+
+    partial void OnSelectedCameraDeviceChanged(MediaDevice? value)
+    {
+        if (value != null && JoinCardEnabled)
+        {
+            Debug.WriteLine($"DEBUG - Camera selection changed to: {value.Name} (ID: {value.Uid})");
+
+            PulseDevice selectedDevice = new PulseDevice
+            {
+                id = value.Uid,
+                name = value.Name,
+                media_type = value.MediaType,
+                media_direction = value.MediaDirection,
+                on_list = value.OnList,
+                is_default = value.IsDefault ? 1 : 0
+            };
+
+            PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+
+            if (error == PulseErrorType.PULSE_SUCCESS)
+            {
+                Debug.WriteLine($"DEBUG - Successfully connected to camera device: {value.Name}");
+            }
+            else
+            {
+                Debug.WriteLine($"DEBUG - Failed to connect camera device: {PulseError.pulse_strerror(error)}");
+            }
+        }
+    }
+
 
     private async Task<bool> RegisterWithSsoAsync()
     {
