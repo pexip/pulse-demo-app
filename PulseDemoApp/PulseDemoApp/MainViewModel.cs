@@ -69,7 +69,7 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
-        SelfPreviewPrimaryActive = true;
+        SelfPreviewActive = true;
         this.videoAddress = string.Empty;
         intitJoinPage();
     }
@@ -127,9 +127,9 @@ public partial class MainViewModel : ObservableObject
             ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
             VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
 
-            this.SelfPreviewPrimaryHandle = VideoHandle;
+            this.SelfPreviewHandle = VideoHandle;
 
-            Debug.WriteLine($"DEBUG - Setting video handle: {this.SelfPreviewPrimaryHandle}");
+            Debug.WriteLine($"DEBUG - Setting video handle: {this.SelfPreviewHandle}");
 
             if (SelectedCameraDevice == null)
             {
@@ -153,12 +153,30 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
- 
+    [RelayCommand]
+    private void ResizeSelfPrimary(SizeInt32 size)
+    {
+        if (VideoAlias != null)
+        {
+            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoHandle, size.Width, size.Height);
+            if (error != PulseErrorType.PULSE_SUCCESS)
+            {
+                Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
+            }
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
     private async Task Join()
     {
     }
+
+    [RelayCommand(CanExecute = nameof(CanLeave))]
+    private void Leave()
+    {
+        // call Pexip Pulse to leave
+    }
+
     #endregion
 
     #region Command Validations
@@ -175,18 +193,7 @@ public partial class MainViewModel : ObservableObject
 
     private bool CanJoin() => JoinCardEnabled;
 
-    [RelayCommand]
-    private void ResizeSelfPrimary(SizeInt32 size)
-    {
-        if (VideoAlias != null)
-        {
-            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoHandle, size.Width, size.Height);
-            if (error != PulseErrorType.PULSE_SUCCESS)
-            {
-                Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
-            }
-        }
-    }
+    private bool CanLeave() => true; // needs to evauate if the user is in a Conference
 
     #endregion
 
