@@ -22,13 +22,22 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelfPreviewActive))]
-    private MediaDevice? selectedCameraDevice;
+    private MediaDevice? selectedJoinCameraDevice;
 
     [ObservableProperty]
     private IntPtr selfPreviewHandle;
 
     [ObservableProperty]
     private bool selfPreviewActive;
+
+    [ObservableProperty]
+    private IntPtr mainConferenceHandle;
+
+    [ObservableProperty]
+    private bool mainConferenceActive;
+
+    [ObservableProperty]
+    private bool conferenceViewActive;
 
     [ObservableProperty]
     private bool metingAliasCardEnabled;
@@ -60,7 +69,8 @@ public partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ContinueCommand))]
     private string videoAlias;
 
-    private nint VideoHandle;
+    private nint VideoJoinHandle;
+    private nint VideoConferenceHandle;
 
     private nint userContext;
     private Microsoft.UI.Xaml.Controls.SwapChainPanel? cameraPreviewPanel;
@@ -81,6 +91,9 @@ public partial class MainViewModel : ObservableObject
     private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
     {
         var devices = new List<MediaDevice>();
+
+        // Add blank entry first
+        devices.Add(new MediaDevice(0, "None", mediaType, mediaDirection, 0, false, false));
 
         PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator);
 
@@ -130,7 +143,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (VideoAlias != null)
         {
-            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoHandle, size.Width, size.Height);
+            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoJoinHandle, size.Width, size.Height);
             if (error != PulseErrorType.PULSE_SUCCESS)
             {
                 Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
@@ -141,6 +154,9 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanJoin))]
     private async Task Join()
     {
+        ConferenceCardEnabled = true;
+        VideoConferenceHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
+        MainConferenceHandle = VideoConferenceHandle;
     }
 
     [RelayCommand(CanExecute = nameof(CanLeave))]

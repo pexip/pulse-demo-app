@@ -149,7 +149,8 @@
           Spacing="12">
 
           <!-- Camera Preview -->
-          <usercontrols:VideoView
+          <Frame Background="AliceBlue">
+            <usercontrols:VideoView
               x:Name="CameraPreviewVideo"
               Width="366"
               Height="206"
@@ -160,6 +161,7 @@
               Handle="{x:Bind ViewModel.SelfPreviewHandle, Mode=OneWay}"
               RenderTransformOrigin="0.5,0.5"
               ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}"/>
+          </Frame>
 
           <!-- Devices -->
           <StackPanel
@@ -171,7 +173,7 @@
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Cameras, Mode=OneWay}"
-              SelectedItem="{x:Bind ViewModel.SelectedCameraDevice, Mode=TwoWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinCameraDevice, Mode=TwoWay}"
               PlaceholderText="Camera" />
 
             <ComboBox
@@ -222,14 +224,22 @@
           </Grid.RowDefinitions>
 
           <!-- Conference Camera  -->
-          <Border Background="Gray" Grid.Row="0">
-            <SwapChainPanel
-              x:Name="ConferenceVideo"
-              HorizontalAlignment="Stretch"
-              VerticalAlignment="Stretch" />
-          </Border>
-          
-          <Button Content="Leave" Grid.Row="1" Style="{StaticResource ButtonStyle}" Width="200" Margin="0 12 0 0" Background="Red"/>
+          <Frame Background="AliceBlue">
+          <usercontrols:VideoView
+              x:Name="CameraConferenceVideo"
+              Grid.Row="0"
+              Width="666"
+              Height="606"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              x:Load="{x:Bind ViewModel.MainConferenceActive, Mode=OneWay}"
+              Background="LightSlateGray"
+              Handle="{x:Bind ViewModel.MainConferenceHandle, Mode=OneWay}"
+              RenderTransformOrigin="0.5,0.5"
+              ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}"/>
+          </Frame>
+
+          <Button Content="Leave" Grid.Row="1" Command="{x:Bind ViewModel.LeaveCommand}" Style="{StaticResource ButtonStyle}" Width="200" Margin="0 12 0 0" Background="Red"/>
         </Grid>
 
       </Border>
