@@ -79,13 +79,17 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
-        SelfPreviewActive = true;
-        this.videoAddress = string.Empty;
+        // Initialize properties
+        SelfPreviewActive = false;  // Hidden until camera selected
+        MainConferenceActive = false;  // Hidden until in conference
+
         intitJoinPage();
     }
 
     private void intitJoinPage()
     {
+        VideoAddress = "sunjay.kalsi@nightly.pexip.com";
+        VideoAlias = "meet.sunjay.kalsi@ukblix.nightly.pexip.com";
     }
 
     private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
@@ -189,17 +193,14 @@ public partial class MainViewModel : ObservableObject
     {
         if (value == null || value.Uid == 0)
         {
-            // is there a way to disconnect the currently connected device here?
+            Debug.WriteLine($"DEBUG - Camera deselected or None selected");
+            // TODO: Disconnect currently connected device here
             return;
         }
 
-        SelfPreviewActive = true;
+        Debug.WriteLine($"DEBUG - Camera selection changed to: {value.Name} (ID: {value.Uid})");
 
-        VideoJoinHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 466, 306, 0xFF000000);
-        SelfPreviewHandle = VideoJoinHandle;
-
-        Debug.WriteLine($"DEBUG - Created video handle: 0x{SelfPreviewHandle:X}");
-
+        // Create device struct
         PulseDevice selectedDevice = new PulseDevice
         {
             id = value.Uid,
@@ -210,16 +211,27 @@ public partial class MainViewModel : ObservableObject
             is_default = value.IsDefault ? 1 : 0
         };
 
+        // Connect device FIRST (before creating video handle)
         PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
 
-        if (error == PulseErrorType.PULSE_SUCCESS)
-        {
-            Debug.WriteLine($"DEBUG - Successfully connected camera: {value.Name}");
-        }
-        else
+        if (error != PulseErrorType.PULSE_SUCCESS)
         {
             Debug.WriteLine($"DEBUG - Failed to connect camera: {PulseError.pulse_strerror(error)}");
+            return;
         }
+
+        Debug.WriteLine($"DEBUG - Successfully connected camera: {value.Name}");
+
+        // Create video handle AFTER device is connected (so SwapChain has video source)
+        VideoJoinHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 466, 306, 0xFF000000);
+
+        Debug.WriteLine($"DEBUG - Created video handle: 0x{VideoJoinHandle:X}");
+
+        // Activate preview and set handle
+        SelfPreviewActive = true;
+        SelfPreviewHandle = VideoJoinHandle;
+
+        Debug.WriteLine($"DEBUG - Set SelfPreviewHandle: 0x{SelfPreviewHandle:X}, SelfPreviewActive: {SelfPreviewActive}");
     }
 
 
@@ -264,9 +276,11 @@ public partial class MainViewModel : ObservableObject
             this.pulseInstance,
             new PulseRegistrationRequest
             {
-                alias = VideoAddress,
-                host = VideoAddress[(VideoAddress.IndexOf('@') + 1)..],
-                use_sso = true,
+                alias = "sunjay.kalsi@nightly.pexip.com",
+                host = "nightly.pexip.com",
+                username = "sunjay.kalsi",
+                password = "islak.yajnus",
+                use_sso = false,
             },
             new PulseAsyncOperationResultCallbackConfig
             {

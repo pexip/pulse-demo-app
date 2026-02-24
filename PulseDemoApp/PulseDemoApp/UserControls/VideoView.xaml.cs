@@ -4,6 +4,7 @@
 
 namespace PulseDemoApp.UserControls;
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using global::Windows.Graphics;
@@ -87,6 +88,9 @@ public sealed partial class VideoView : UserControl
     private static void OnHandleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var self = (VideoView)d;
+        var oldValue = (long)e.OldValue;
+        var newValue = (long)e.NewValue;
+        Debug.WriteLine($"VideoView.OnHandleChanged - Old: 0x{oldValue:X}, New: 0x{newValue:X}");
         self.AcquireHandle();
     }
 
@@ -109,7 +113,8 @@ public sealed partial class VideoView : UserControl
     {
         try
         {
-            // Debug.WriteLine("Binding video handle : 0x{0:X}", swapChainPtr);
+            Debug.WriteLine($"VideoView.BindHandle called with: 0x{swapChainPtr:X}");
+
             // Cast SwapChainPanel to IInspectable (IInspectable is the base interface for XAML objects in C++)
             var panelObj = Marshal.GetIUnknownForObject(this.SwapChainPanel);
 
@@ -124,13 +129,16 @@ public sealed partial class VideoView : UserControl
             // Call SetSwapChain with your swap chain pointer
             panelNative.SetSwapChain(swapChainPtr);
 
+            Debug.WriteLine($"VideoView.BindHandle - Successfully set swap chain");
+
             // Release the COM objects
             Marshal.Release(panelObj);
             Marshal.Release(panelPtr);
         }
         catch (Exception ex)
         {
-            // this.logger.Error(ex.ToString());
+            Debug.WriteLine($"ERROR in VideoView.BindHandle: {ex.Message}");
+            Debug.WriteLine($"Stack: {ex.StackTrace}");
         }
         finally
         {
