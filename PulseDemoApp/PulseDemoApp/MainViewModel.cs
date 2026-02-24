@@ -120,37 +120,9 @@ public partial class MainViewModel : ObservableObject
     {
         JoinCardEnabled = true;
 
-        if (JoinCardEnabled)
-        {
-            ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-            ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-            ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
-            VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
-
-            this.SelfPreviewHandle = VideoHandle;
-
-            Debug.WriteLine($"DEBUG - Setting video handle: {this.SelfPreviewHandle}");
-
-            if (SelectedCameraDevice == null)
-            {
-                Debug.WriteLine("DEBUG - No camera device selected");
-                return;
-            }
-
-            PulseDevice selectedDevice = new PulseDevice
-            {
-                id = SelectedCameraDevice!.Uid,
-                name = SelectedCameraDevice!.Name,
-                media_type = SelectedCameraDevice!.MediaType,
-                media_direction = SelectedCameraDevice!.MediaDirection,
-                on_list = SelectedCameraDevice!.OnList,
-                is_default = SelectedCameraDevice!.IsDefault ? 1 : 0
-            };
-
-            PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
-
-            Debug.WriteLine($"DEBUG - Connecting to Device: {selectedDevice.name} ID: {selectedDevice.id}");
-        }
+        ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
     }
 
     [RelayCommand]
@@ -197,32 +169,40 @@ public partial class MainViewModel : ObservableObject
 
     #endregion
 
-    partial void OnSelectedCameraDeviceChanged(MediaDevice? value)
+    partial void OnSelectedJoinCameraDeviceChanged(MediaDevice? value)
     {
-        if (value != null && JoinCardEnabled)
+        if (value == null || value.Uid == 0)
         {
-            Debug.WriteLine($"DEBUG - Camera selection changed to: {value.Name} (ID: {value.Uid})");
+            // is there a way to disconnect the currently connected device here?
+            return;
+        }
 
-            PulseDevice selectedDevice = new PulseDevice
-            {
-                id = value.Uid,
-                name = value.Name,
-                media_type = value.MediaType,
-                media_direction = value.MediaDirection,
-                on_list = value.OnList,
-                is_default = value.IsDefault ? 1 : 0
-            };
+        SelfPreviewActive = true;
 
-            PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+        VideoJoinHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 466, 306, 0xFF000000);
+        SelfPreviewHandle = VideoJoinHandle;
 
-            if (error == PulseErrorType.PULSE_SUCCESS)
-            {
-                Debug.WriteLine($"DEBUG - Successfully connected to camera device: {value.Name}");
-            }
-            else
-            {
-                Debug.WriteLine($"DEBUG - Failed to connect camera device: {PulseError.pulse_strerror(error)}");
-            }
+        Debug.WriteLine($"DEBUG - Created video handle: 0x{SelfPreviewHandle:X}");
+
+        PulseDevice selectedDevice = new PulseDevice
+        {
+            id = value.Uid,
+            name = value.Name,
+            media_type = value.MediaType,
+            media_direction = value.MediaDirection,
+            on_list = value.OnList,
+            is_default = value.IsDefault ? 1 : 0
+        };
+
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+
+        if (error == PulseErrorType.PULSE_SUCCESS)
+        {
+            Debug.WriteLine($"DEBUG - Successfully connected camera: {value.Name}");
+        }
+        else
+        {
+            Debug.WriteLine($"DEBUG - Failed to connect camera: {PulseError.pulse_strerror(error)}");
         }
     }
 
