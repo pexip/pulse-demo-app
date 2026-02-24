@@ -155,9 +155,9 @@
               Height="206"
               HorizontalAlignment="Center"
               VerticalAlignment="Center"
-              x:Load="{x:Bind ViewModel.SelfPrimaryActive, Mode=OneWay}"
+              x:Load="{x:Bind ViewModel.SelfPreviewPrimaryActive, Mode=OneWay}"
               Background="LightSlateGray"
-              Handle="{x:Bind ViewModel.SelfPrimaryHandle, Mode=OneWay}"
+              Handle="{x:Bind ViewModel.SelfPreviewPrimaryHandle, Mode=OneWay}"
               RenderTransformOrigin="0.5,0.5"
               ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}"/>
 

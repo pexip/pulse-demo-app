@@ -21,14 +21,14 @@ public partial class MainViewModel : ObservableObject
     #region Properties
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SelfPrimaryActive))]
+    [NotifyPropertyChangedFor(nameof(SelfPreviewActive))]
     private MediaDevice? selectedCameraDevice;
 
     [ObservableProperty]
-    private IntPtr selfPrimaryHandle;
+    private IntPtr selfPreviewHandle;
 
     [ObservableProperty]
-    private bool selfPrimaryActive;
+    private bool selfPreviewActive;
 
     [ObservableProperty]
     private bool metingAliasCardEnabled;
@@ -69,7 +69,7 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
-        SelfPrimaryActive = true;
+        SelfPreviewPrimaryActive = true;
         this.videoAddress = string.Empty;
         intitJoinPage();
     }
@@ -127,9 +127,9 @@ public partial class MainViewModel : ObservableObject
             ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
             VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
 
-            this.SelfPrimaryHandle = VideoHandle;
+            this.SelfPreviewPrimaryHandle = VideoHandle;
 
-            Debug.WriteLine($"DEBUG - Setting video handle: {this.SelfPrimaryHandle}");
+            Debug.WriteLine($"DEBUG - Setting video handle: {this.SelfPreviewPrimaryHandle}");
 
             if (SelectedCameraDevice == null)
             {
