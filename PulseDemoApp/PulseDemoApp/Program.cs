@@ -1,4 +1,8 @@
-﻿using Microsoft.UI.Dispatching;
+﻿// <copyright file="Program.cs" company="Pexip">
+// Copyright (c) Pexip. All rights reserved.
+// </copyright>
+
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using System.Runtime.InteropServices;
 using WinRT;

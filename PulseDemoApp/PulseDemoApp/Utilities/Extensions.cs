@@ -1,4 +1,8 @@
-﻿using System.Runtime.InteropServices;
+﻿// <copyright file="Extensions.cs" company="Pexip">
+// Copyright (c) Pexip. All rights reserved.
+// </copyright>
+
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PulseDemoApp.Utilities;

@@ -79,6 +79,8 @@
             Spacing="12">
             <TextBox
               Width="340"
+              InputScope="EmailSmtpAddress"
+              IsSpellCheckEnabled="False"
               PlaceholderText="name.lastname@example.com"
               Text="{x:Bind ViewModel.VideoAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button
@@ -113,7 +115,9 @@
           Spacing="12">
           <TextBox
             Width="340"
-            PlaceholderText="video alias"
+            InputScope="EmailSmtpAddress"
+            IsSpellCheckEnabled="False"
+            PlaceholderText="video alias ie meet.first.last@server.com"            
             Text="{x:Bind ViewModel.VideoAlias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
           <Button
             MinWidth="160"

@@ -1,3 +1,7 @@
+// <copyright file="Bootstrapper.cs" company="Pexip">
+// Copyright (c) Pexip. All rights reserved.
+// </copyright>
+
 namespace PulseDemoApp;
 
 using Microsoft.UI.Xaml;

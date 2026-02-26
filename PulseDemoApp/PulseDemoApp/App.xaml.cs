@@ -1,4 +1,8 @@
-﻿using Microsoft.UI.Xaml;
+﻿// <copyright file="App.cs" company="Pexip">
+// Copyright (c) Pexip. All rights reserved.
+// </copyright>
+
+using Microsoft.UI.Xaml;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
