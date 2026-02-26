@@ -157,7 +157,7 @@
             VerticalAlignment="Center"
             Visibility="{x:Bind ViewModel.SelfPreviewActive, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
             Background="AliceBlue"
-            Handle="{x:Bind ViewModel.SelfPreviewHandle, Mode=TwoWay}"
+            Handle="{x:Bind ViewModel.SelfPreviewHandle, Mode=OneWay}"
             RenderTransformOrigin="0.5,0.5"
             ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}"/>
 
