@@ -174,7 +174,7 @@ public partial class MainViewModel : ObservableObject
         if (oldValue?.Uid == value?.Uid) return;
 
         // Disconnect any existing camera first
-        PulseErrorType disconnectError = PulseDeviceSession.pulse_device_session_disconnect_main_video(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        PulseDeviceSession.pulse_device_session_disconnect_main_video(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, PulseMediaDirection.PULSE_MEDIA_INPUT);
 
         if (value == null || value.Uid == 0)
         {
