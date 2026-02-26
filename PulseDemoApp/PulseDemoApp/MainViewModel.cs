@@ -191,10 +191,15 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnSelectedJoinCameraDeviceChanged(MediaDevice? value)
     {
+        // Disconnect any existing camera first
+        PulseErrorType disconnectError = PulseDeviceSession.pulse_device_session_disconnect_main_video(
+            pulseInstance, 
+            PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 
+            PulseMediaDirection.PULSE_MEDIA_INPUT);
+
         if (value == null || value.Uid == 0)
         {
-            Debug.WriteLine($"DEBUG - Camera deselected or None selected");
-            // TODO: Disconnect currently connected device here
+            SelfPreviewActive = false;
             return;
         }
 
@@ -211,16 +216,18 @@ public partial class MainViewModel : ObservableObject
             is_default = value.IsDefault ? 1 : 0
         };
 
-        // Connect device FIRST (before creating video handle)
+        // Connect device (before creating video handle)
         PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
 
         if (error != PulseErrorType.PULSE_SUCCESS)
         {
             Debug.WriteLine($"DEBUG - Failed to connect camera: {PulseError.pulse_strerror(error)}");
+            value.IsConnected = false;
             return;
         }
 
         Debug.WriteLine($"DEBUG - Successfully connected camera: {value.Name}");
+        value.IsConnected = true;
 
         // Create video handle AFTER device is connected (so SwapChain has video source)
         VideoJoinHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 466, 306, 0xFF000000);

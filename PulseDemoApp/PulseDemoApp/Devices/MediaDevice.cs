@@ -52,6 +52,6 @@ namespace PulseDemoApp.Devices
 
         public bool IsDefault { get; }
 
-        public bool IsConnected { get; }
+        public bool IsConnected { get; set; }
     }
 }
