@@ -118,18 +118,25 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ResizeSelfPrimary(SizeInt32 size)
     {
-        if (VideoAlias != null)
+        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoJoinHandle, size.Width, size.Height);
+        if (error != PulseErrorType.PULSE_SUCCESS)
         {
-            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoJoinHandle, size.Width, size.Height);
-            if (error != PulseErrorType.PULSE_SUCCESS)
-            {
-                Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
-            }
+            Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
+        }
+    }
+
+    [RelayCommand]
+    private void ResizeConference(SizeInt32 size)
+    {
+        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoConferenceHandle, size.Width, size.Height);
+        if (error != PulseErrorType.PULSE_SUCCESS)
+        {
+            Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
         }
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
-    private async Task Join()
+    private void Join()
     {
         ConferenceCardEnabled = true;
         VideoConferenceHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
@@ -178,6 +185,16 @@ public partial class MainViewModel : ObservableObject
         // Connect device (before creating video handle)
         if (ConnectMediaDevice(value, "Camera"))
         {
+            // Destroy the old video handle if it exists
+            if (VideoJoinHandle != IntPtr.Zero)
+            {
+                PulseErrorType destroyError = PulseDeviceSession.pulse_device_session_release_video_handle(pulseInstance, VideoJoinHandle);
+                if (destroyError != PulseErrorType.PULSE_SUCCESS)
+                {
+                    Debug.WriteLine($"DEBUG - Failed to destroy old video handle: {PulseError.pulse_strerror(destroyError)}");
+                }
+            }
+
             // Create video handle AFTER device is connected (so SwapChain has video source)
             VideoJoinHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 466, 306, 0xFF000000);
 
@@ -224,7 +241,7 @@ public partial class MainViewModel : ObservableObject
         };
 
         pulseError = PulseDevices.pulse_device_iterator_foreach(p_iterator, addDevice, 0);
-        if (pulseError != PulseErrorType.PULSE_ERROR_NONE)
+        if (pulseError != PulseErrorType.PULSE_SUCCESS)
         {
             Debug.WriteLine($"pulse_device_iterator_foreach failed with error: {pulseError}");
         }
