@@ -225,6 +225,10 @@ public partial class MainViewModel : ObservableObject
         };
 
         pulseError = PulseDevices.pulse_device_iterator_foreach(p_iterator, addDevice, 0);
+        if (pulseError != PulseErrorType.PULSE_ERROR_NONE)
+        {
+            Debug.WriteLine($"pulse_device_iterator_foreach failed with error: {pulseError}");
+        }
 
         if (mediaType == PulseMediaType.PULSE_MEDIA_VIDEO && mediaDirection == PulseMediaDirection.PULSE_MEDIA_INPUT)
         {
