@@ -178,12 +178,14 @@
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Mics, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinMicDevice, Mode=TwoWay}"
               PlaceholderText="Mic" />
 
             <ComboBox
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Speakers, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinSpeakerDevice, Mode=TwoWay}"
               PlaceholderText="Speakers" />
 
             <Button
