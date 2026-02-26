@@ -21,7 +21,6 @@ public partial class MainViewModel : ObservableObject
     #region Properties
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SelfPreviewActive))]
     private MediaDevice? selectedJoinCameraDevice;
 
     [ObservableProperty]
