@@ -1,3 +1,7 @@
+// <copyright file="MainPage.cs" company="Pexip">
+// Copyright (c) Pexip. All rights reserved.
+// </copyright>
+
 using Microsoft.UI.Xaml.Controls;
 
 // To learn more about WinUI, the WinUI project structure,

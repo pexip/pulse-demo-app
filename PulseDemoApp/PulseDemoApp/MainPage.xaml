@@ -79,6 +79,8 @@
             Spacing="12">
             <TextBox
               Width="340"
+              InputScope="EmailSmtpAddress"
+              IsSpellCheckEnabled="False"
               PlaceholderText="name.lastname@example.com"
               Text="{x:Bind ViewModel.VideoAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <Button
@@ -113,7 +115,9 @@
           Spacing="12">
           <TextBox
             Width="340"
-            PlaceholderText="video alias"
+            InputScope="EmailSmtpAddress"
+            IsSpellCheckEnabled="False"
+            PlaceholderText="video alias ie meet.first.last@server.com"            
             Text="{x:Bind ViewModel.VideoAlias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
           <Button
             MinWidth="160"
@@ -150,16 +154,16 @@
 
           <!-- Camera Preview -->
           <usercontrols:VideoView
-              x:Name="CameraPreviewVideo"
-              Width="366"
-              Height="206"
-              HorizontalAlignment="Center"
-              VerticalAlignment="Center"
-              x:Load="{x:Bind ViewModel.SelfPrimaryActive, Mode=OneWay}"
-              Background="LightSlateGray"
-              Handle="{x:Bind ViewModel.SelfPrimaryHandle, Mode=OneWay}"
-              RenderTransformOrigin="0.5,0.5"
-              ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}"/>
+            x:Name="CameraPreviewVideo"
+            Width="366"
+            Height="206"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Visibility="{x:Bind ViewModel.SelfPreviewActive, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+            Background="AliceBlue"
+            Handle="{x:Bind ViewModel.SelfPreviewHandle, Mode=OneWay}"
+            RenderTransformOrigin="0.5,0.5"
+            ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}"/>
 
           <!-- Devices -->
           <StackPanel
@@ -171,19 +175,21 @@
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Cameras, Mode=OneWay}"
-              SelectedItem="{x:Bind ViewModel.SelectedCameraDevice, Mode=TwoWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinCameraDevice, Mode=TwoWay}"
               PlaceholderText="Camera" />
 
             <ComboBox
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Mics, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinMicDevice, Mode=TwoWay}"
               PlaceholderText="Mic" />
 
             <ComboBox
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Speakers, Mode=OneWay}"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinSpeakerDevice, Mode=TwoWay}"
               PlaceholderText="Speakers" />
 
             <Button
@@ -222,14 +228,20 @@
           </Grid.RowDefinitions>
 
           <!-- Conference Camera  -->
-          <Border Background="Gray" Grid.Row="0">
-            <SwapChainPanel
-              x:Name="ConferenceVideo"
-              HorizontalAlignment="Stretch"
-              VerticalAlignment="Stretch" />
-          </Border>
-          
-          <Button Content="Leave" Grid.Row="1" Style="{StaticResource ButtonStyle}" Width="200" Margin="0 12 0 0" Background="Red"/>
+          <usercontrols:VideoView
+            x:Name="CameraConferenceVideo"
+            Grid.Row="0"
+            Width="666"
+            Height="606"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Visibility="{x:Bind ViewModel.MainConferenceActive, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+            Background="AliceBlue"
+            Handle="{x:Bind ViewModel.MainConferenceHandle, Mode=OneWay}"
+            RenderTransformOrigin="0.5,0.5"
+            ResizeCommand="{x:Bind ViewModel.ResizeConferenceCommand}"/>
+
+          <Button Content="Leave" Grid.Row="1" Command="{x:Bind ViewModel.LeaveCommand}" Style="{StaticResource ButtonStyle}" Width="200" Margin="0 12 0 0" Background="Red"/>
         </Grid>
 
       </Border>

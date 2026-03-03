@@ -1,3 +1,7 @@
+// <copyright file="MainViewModel.cs" company="Pexip">
+// Copyright (c) Pexip. All rights reserved.
+// </copyright>
+
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using Pexip.Pulse.NativeDelegates;
@@ -21,14 +25,28 @@ public partial class MainViewModel : ObservableObject
     #region Properties
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SelfPrimaryActive))]
-    private MediaDevice? selectedCameraDevice;
+    private MediaDevice? selectedJoinCameraDevice;
 
     [ObservableProperty]
-    private IntPtr selfPrimaryHandle;
+    private MediaDevice? selectedJoinMicDevice;
 
     [ObservableProperty]
-    private bool selfPrimaryActive;
+    private MediaDevice? selectedJoinSpeakerDevice;
+
+    [ObservableProperty]
+    private IntPtr selfPreviewHandle;
+
+    [ObservableProperty]
+    private bool selfPreviewActive;
+
+    [ObservableProperty]
+    private IntPtr mainConferenceHandle;
+
+    [ObservableProperty]
+    private bool mainConferenceActive;
+
+    [ObservableProperty]
+    private bool conferenceViewActive;
 
     [ObservableProperty]
     private bool metingAliasCardEnabled;
@@ -42,7 +60,7 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
-    private string videoAddress;
+    private string videoAddress = string.Empty;
 
     [ObservableProperty]
     private string registrationProgress;
@@ -60,7 +78,8 @@ public partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ContinueCommand))]
     private string videoAlias;
 
-    private nint VideoHandle;
+    private nint VideoJoinHandle;
+    private nint VideoConferenceHandle;
 
     private nint userContext;
     private Microsoft.UI.Xaml.Controls.SwapChainPanel? cameraPreviewPanel;
@@ -69,42 +88,6 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
-        SelfPrimaryActive = true;
-        this.videoAddress = string.Empty;
-        intitJoinPage();
-    }
-
-    private void intitJoinPage()
-    {
-    }
-
-    private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
-    {
-        var devices = new List<MediaDevice>();
-
-        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator);
-
-        PulseDeviceIteratorFunc addDevice = (device, user_context) =>
-        {
-            devices.Add(new MediaDevice(device.id, device.name, device.media_type, device.media_direction, device.on_list, device.is_default !=0, true));
-        };
-
-        pulseError = PulseDevices.pulse_device_iterator_foreach(p_iterator, addDevice, 0);
-
-        if (mediaType == PulseMediaType.PULSE_MEDIA_VIDEO && mediaDirection == PulseMediaDirection.PULSE_MEDIA_INPUT)
-        {
-            Cameras = (Cameras ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
-        }
-        else if (mediaType == PulseMediaType.PULSE_MEDIA_AUDIO && mediaDirection == PulseMediaDirection.PULSE_MEDIA_INPUT)
-        {
-            Mics = (Mics ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
-        }
-        else if (mediaType == PulseMediaType.PULSE_MEDIA_AUDIO && mediaDirection == PulseMediaDirection.PULSE_MEDIA_OUTPUT)
-        {
-            Speakers = (Speakers ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
-        }
-
-        PulseDevices.pulse_device_iterator_free(p_iterator);
     }
 
     #region Commands
@@ -120,45 +103,45 @@ public partial class MainViewModel : ObservableObject
     {
         JoinCardEnabled = true;
 
-        if (JoinCardEnabled)
+        ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
+    }
+
+    [RelayCommand]
+    private void ResizeSelfPrimary(SizeInt32 size)
+    {
+        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoJoinHandle, size.Width, size.Height);
+        if (error != PulseErrorType.PULSE_SUCCESS)
         {
-            ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-            ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-            ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
-            VideoHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
-
-            this.SelfPrimaryHandle = VideoHandle;
-
-            Debug.WriteLine($"DEBUG - Setting video handle: {this.SelfPrimaryHandle}");
-
-            if (SelectedCameraDevice == null)
-            {
-                Debug.WriteLine("DEBUG - No camera device selected");
-                return;
-            }
-
-            PulseDevice selectedDevice = new PulseDevice
-            {
-                id = SelectedCameraDevice!.Uid,
-                name = SelectedCameraDevice!.Name,
-                media_type = SelectedCameraDevice!.MediaType,
-                media_direction = SelectedCameraDevice!.MediaDirection,
-                on_list = SelectedCameraDevice!.OnList,
-                is_default = SelectedCameraDevice!.IsDefault ? 1 : 0
-            };
-
-            PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
-
-            Debug.WriteLine($"DEBUG - Connecting to Device: {selectedDevice.name} ID: {selectedDevice.id}");
+            Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
         }
     }
 
- 
+    [RelayCommand]
+    private void ResizeConference(SizeInt32 size)
+    {
+        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoConferenceHandle, size.Width, size.Height);
+        if (error != PulseErrorType.PULSE_SUCCESS)
+        {
+            Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
-    private async Task Join()
+    private void Join()
     {
+        ConferenceCardEnabled = true;
+        VideoConferenceHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
+        MainConferenceHandle = VideoConferenceHandle;
     }
+
+    [RelayCommand(CanExecute = nameof(CanLeave))]
+    private void Leave()
+    {
+        // call Pexip Pulse to leave
+    }
+
     #endregion
 
     #region Command Validations
@@ -175,50 +158,133 @@ public partial class MainViewModel : ObservableObject
 
     private bool CanJoin() => JoinCardEnabled;
 
-    [RelayCommand]
-    private void ResizeSelfPrimary(SizeInt32 size)
-    {
-        if (VideoAlias != null)
-        {
-            var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoHandle, size.Width, size.Height);
-            if (error != PulseErrorType.PULSE_SUCCESS)
-            {
-                Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
-            }
-        }
-    }
+    private bool CanLeave() => true; // needs to evaluate if the user is in a Conference
 
     #endregion
 
-    partial void OnSelectedCameraDeviceChanged(MediaDevice? value)
+    partial void OnSelectedJoinCameraDeviceChanged(MediaDevice? oldValue, MediaDevice? value)
     {
-        if (value != null && JoinCardEnabled)
-        {
-            Debug.WriteLine($"DEBUG - Camera selection changed to: {value.Name} (ID: {value.Uid})");
+        if (oldValue?.Uid == value?.Uid || value == null) return;
 
-            PulseDevice selectedDevice = new PulseDevice
+        // Disconnect any existing camera first
+        PulseDeviceSession.pulse_device_session_disconnect_main_video(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, PulseMediaDirection.PULSE_MEDIA_INPUT);
+
+        if (oldValue != null)
+        {
+            oldValue.IsConnected = false;
+        }
+
+        // Connect device (before creating video handle)
+        if (ConnectMediaDevice(value, "Camera"))
+        {
+            // Destroy the old video handle if it exists
+            if (VideoJoinHandle != IntPtr.Zero)
             {
-                id = value.Uid,
-                name = value.Name,
-                media_type = value.MediaType,
-                media_direction = value.MediaDirection,
-                on_list = value.OnList,
-                is_default = value.IsDefault ? 1 : 0
+                PulseErrorType destroyError = PulseDeviceSession.pulse_device_session_release_video_handle(pulseInstance, VideoJoinHandle);
+                if (destroyError != PulseErrorType.PULSE_SUCCESS)
+                {
+                    Debug.WriteLine($"DEBUG - Failed to destroy old video handle: {PulseError.pulse_strerror(destroyError)}");
+                }
+            }
+
+            // Create video handle AFTER device is connected (so SwapChain has video source)
+            VideoJoinHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 466, 306, 0xFF000000);
+
+            Debug.WriteLine($"DEBUG - Created video handle: 0x{VideoJoinHandle:X}");
+
+            // Activate preview and set handle
+            SelfPreviewActive = true;
+            SelfPreviewHandle = VideoJoinHandle;
+
+            Debug.WriteLine($"DEBUG - Set SelfPreviewHandle: 0x{SelfPreviewHandle:X}, SelfPreviewActive: {SelfPreviewActive}");
+        }
+    }
+
+    partial void OnSelectedJoinSpeakerDeviceChanged(MediaDevice? oldValue, MediaDevice? newValue)
+    {
+        if (oldValue?.Uid == newValue?.Uid || newValue == null) return;
+
+        // Disconnect any existing speaker first
+        PulseErrorType disconnectError = PulseDeviceSession.pulse_device_session_disconnect_main_audio(pulseInstance);
+
+        if (disconnectError != PulseErrorType.PULSE_SUCCESS)
+        {
+            Debug.WriteLine($"DEBUG - Failed to disconnect existing speaker: {PulseError.pulse_strerror(disconnectError)}");
+        }
+
+        ConnectMediaDevice(newValue, "Speaker");
+    }
+
+    partial void OnSelectedJoinMicDeviceChanged(MediaDevice? oldValue, MediaDevice? newValue)
+    {
+        if (oldValue?.Uid == newValue?.Uid || newValue == null) return;
+
+        // Disconnect any existing microphone first
+        PulseErrorType disconnectError = PulseDeviceSession.pulse_device_session_disconnect_main_audio(pulseInstance);
+
+        if (disconnectError != PulseErrorType.PULSE_SUCCESS)
+        {
+            Debug.WriteLine($"DEBUG - Failed to disconnect existing speaker: {PulseError.pulse_strerror(disconnectError)}");
+        }
+
+        ConnectMediaDevice(newValue, "Microphone");
+    }
+
+    #region Device Connection Helpers
+
+    private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
+    {
+        var devices = new List<MediaDevice>();
+
+        devices.Add(new MediaDevice(0, "None", mediaType, mediaDirection, 0, false, false));
+
+        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator);
+
+        using (var iterator = new PulseDeviceIteratorHandle(p_iterator))
+        {
+            PulseDeviceIteratorFunc addDevice = (device, user_context) =>
+            {
+                devices.Add(new MediaDevice(device.id, device.name, device.media_type, device.media_direction, device.on_list, device.is_default != 0, true));
             };
 
-            PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, selectedDevice, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
-
-            if (error == PulseErrorType.PULSE_SUCCESS)
+            pulseError = PulseDevices.pulse_device_iterator_foreach(iterator.Handle, addDevice, 0);
+            if (pulseError != PulseErrorType.PULSE_SUCCESS)
             {
-                Debug.WriteLine($"DEBUG - Successfully connected to camera device: {value.Name}");
+                Debug.WriteLine($"pulse_device_iterator_foreach failed with error: {pulseError}");
             }
-            else
+
+            switch ((mediaType, mediaDirection))
             {
-                Debug.WriteLine($"DEBUG - Failed to connect camera device: {PulseError.pulse_strerror(error)}");
+                case (PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT):
+                    Cameras = (Cameras ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
+                    break;
+                case (PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT):
+                    Mics = (Mics ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
+                    break;
+                case (PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT):
+                    Speakers = (Speakers ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
+                    break;
             }
         }
     }
 
+    private bool ConnectMediaDevice(MediaDevice device, string deviceTypeName)
+    {
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, device.ToPulseDevice(), PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+
+        if (error != PulseErrorType.PULSE_SUCCESS)
+        {
+            Debug.WriteLine($"DEBUG - Failed to connect {deviceTypeName.ToLower()}: {PulseError.pulse_strerror(error)}");
+            device.IsConnected = false;
+            return false;
+        }
+
+        Debug.WriteLine($"DEBUG - Successfully connected {deviceTypeName.ToLower()}: {device.Name}");
+        device.IsConnected = true;
+        return true;
+    }
+
+    #endregion
 
     private async Task<bool> RegisterWithSsoAsync()
     {

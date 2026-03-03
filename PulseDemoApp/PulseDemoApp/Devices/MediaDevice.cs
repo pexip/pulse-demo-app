@@ -1,32 +1,12 @@
-﻿using Pexip.Pulse.NativeEnums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// <copyright file="MediaDevice.cs" company="Pexip">
+// Copyright (c) Pexip. All rights reserved.
+// </copyright>
+
+using Pexip.Pulse.NativeEnums;
+using Pexip.Pulse.NativeStructs;
 
 namespace PulseDemoApp.Devices
 {
-    public enum DeviceState
-    {
-        Active,
-        Muted,
-        Revoked,
-        Busy,
-        Error,
-    }
-    public enum MediaDirection
-    {
-        PULSE_MEDIA_INPUT,
-        PULSE_MEDIA_OUTPUT
-    }
-
-    public enum MediaType
-    {
-        PULSE_MEDIA_AUDIO,
-        PULSE_MEDIA_VIDEO
-    }
-
     public class MediaDevice : ObservableObject
     {
         public MediaDevice(uint uid, string name, PulseMediaType mediaType, PulseMediaDirection pulseMediaDirection, int onList, bool isDefault, bool isConnected)
@@ -52,6 +32,19 @@ namespace PulseDemoApp.Devices
 
         public bool IsDefault { get; }
 
-        public bool IsConnected { get; }
+        public bool IsConnected { get; set; }
+
+        public PulseDevice ToPulseDevice()
+        {
+            return new PulseDevice
+            {
+                id = Uid,
+                name = Name,
+                media_type = MediaType,
+                media_direction = MediaDirection,
+                on_list = OnList,
+                is_default = IsDefault ? 1 : 0,
+            };
+        }
     }
 }
