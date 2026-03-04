@@ -3,7 +3,7 @@
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:usercontrols="using:PulseDemoApp.UserControls"
   mc:Ignorable="d">
 
@@ -91,7 +91,7 @@
           <TextBlock
             Margin="0 10 0 0"
             HorizontalAlignment="Left"
-            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay, TargetNullValue='Unregistered'}"/>
+            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay, TargetNullValue='Unregistered'}" />
         </StackPanel>
 
       </Border>
@@ -117,13 +117,12 @@
             Width="340"
             InputScope="EmailSmtpAddress"
             IsSpellCheckEnabled="False"
-            PlaceholderText="video alias ie meet.first.last@server.com"            
+            PlaceholderText="video alias ie meet.first.last@server.com"
             Text="{x:Bind ViewModel.VideoAlias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
           <Button
             MinWidth="160"
             HorizontalAlignment="Center"
             Command="{x:Bind ViewModel.ContinueCommand}"
-            CommandParameter="{x:Bind CameraPreviewVideo}"
             Content="Continue" />
         </StackPanel>
 
@@ -152,51 +151,57 @@
           Orientation="Vertical"
           Spacing="12">
 
-          <!-- Camera Preview -->
-          <usercontrols:VideoView
-            x:Name="CameraPreviewVideo"
-            Width="366"
-            Height="206"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Visibility="{x:Bind ViewModel.SelfPreviewActive, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-            Background="AliceBlue"
-            Handle="{x:Bind ViewModel.SelfPreviewHandle, Mode=OneWay}"
-            RenderTransformOrigin="0.5,0.5"
-            ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}"/>
+          <Grid
+            Width="196"
+            Height="110"
+            Background="#212121"
+            CornerRadius="8">
+
+            <!-- Camera Preview -->
+            <usercontrols:VideoView
+              Width="196"
+              Height="110"
+              Handle="{x:Bind ViewModel.SelfPreviewHandle, Mode=OneWay}"
+              RenderTransformOrigin="0.5,0.5"
+              ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}" />
+
+          </Grid>
 
           <!-- Devices -->
           <StackPanel
             Width="300"
             HorizontalAlignment="Left"
-            Spacing="12">
+            Spacing="5">
             <ComboBox
-              x:Name="CameraComboBox"
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Cameras, Mode=OneWay}"
-              SelectedItem="{x:Bind ViewModel.SelectedJoinCameraDevice, Mode=TwoWay}"
-              PlaceholderText="Camera" />
+              PlaceholderText="Camera"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinCameraDevice, Mode=TwoWay}" />
 
             <ComboBox
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Mics, Mode=OneWay}"
-              SelectedItem="{x:Bind ViewModel.SelectedJoinMicDevice, Mode=TwoWay}"
-              PlaceholderText="Mic" />
+              PlaceholderText="Mic"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinMicDevice, Mode=TwoWay}" />
 
             <ComboBox
               HorizontalAlignment="Stretch"
               DisplayMemberPath="Name"
               ItemsSource="{x:Bind ViewModel.Speakers, Mode=OneWay}"
-              SelectedItem="{x:Bind ViewModel.SelectedJoinSpeakerDevice, Mode=TwoWay}"
-              PlaceholderText="Speakers" />
+              PlaceholderText="Speakers"
+              SelectedItem="{x:Bind ViewModel.SelectedJoinSpeakerDevice, Mode=TwoWay}" />
 
             <Button
               Background="Green"
               Command="{x:Bind ViewModel.JoinCommand}"
               Content="Join With Video"
               Style="{StaticResource ButtonStyle}" />
+
+            <TextBlock
+              HorizontalAlignment="Left"
+              Text="{x:Bind ViewModel.ConnectionProgress, Mode=OneWay, TargetNullValue='Not connected'}" />
 
           </StackPanel>
 
@@ -225,23 +230,30 @@
           <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
 
-          <!-- Conference Camera  -->
+          <!-- Conference Camera -->
           <usercontrols:VideoView
-            x:Name="CameraConferenceVideo"
-            Grid.Row="0"
             Width="666"
             Height="606"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Visibility="{x:Bind ViewModel.MainConferenceActive, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-            Background="AliceBlue"
             Handle="{x:Bind ViewModel.MainConferenceHandle, Mode=OneWay}"
-            RenderTransformOrigin="0.5,0.5"
-            ResizeCommand="{x:Bind ViewModel.ResizeConferenceCommand}"/>
+            ResizeCommand="{x:Bind ViewModel.ResizeConferenceCommand}" />
 
-          <Button Content="Leave" Grid.Row="1" Command="{x:Bind ViewModel.LeaveCommand}" Style="{StaticResource ButtonStyle}" Width="200" Margin="0 12 0 0" Background="Red"/>
+          <Button
+            Grid.Row="1"
+            Width="200"
+            Margin="0 12 0 0"
+            Background="Red"
+            Command="{x:Bind ViewModel.LeaveCommand}"
+            Content="Leave"
+            Style="{StaticResource ButtonStyle}" />
+
+          <TextBlock
+            Grid.Row="2"
+            Text="{x:Bind ViewModel.DisconnectionProgress, Mode=OneWay, TargetNullValue=''}" />
         </Grid>
 
       </Border>

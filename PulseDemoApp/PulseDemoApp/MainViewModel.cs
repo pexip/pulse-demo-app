@@ -37,13 +37,7 @@ public partial class MainViewModel : ObservableObject
     private IntPtr selfPreviewHandle;
 
     [ObservableProperty]
-    private bool selfPreviewActive;
-
-    [ObservableProperty]
     private IntPtr mainConferenceHandle;
-
-    [ObservableProperty]
-    private bool mainConferenceActive;
 
     [ObservableProperty]
     private bool conferenceViewActive;
@@ -66,6 +60,12 @@ public partial class MainViewModel : ObservableObject
     private string registrationProgress;
 
     [ObservableProperty]
+    private string connectionProgress;
+
+    [ObservableProperty]
+    private string disconnectionProgress;
+
+    [ObservableProperty]
     private MediaDevice[] cameras;
 
     [ObservableProperty]
@@ -77,9 +77,6 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ContinueCommand))]
     private string videoAlias;
-
-    private nint VideoJoinHandle;
-    private nint VideoConferenceHandle;
 
     private nint userContext;
     private Microsoft.UI.Xaml.Controls.SwapChainPanel? cameraPreviewPanel;
@@ -103,6 +100,7 @@ public partial class MainViewModel : ObservableObject
     {
         JoinCardEnabled = true;
 
+        SelfPreviewHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 466, 306, 0xFF000000);
         ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
         ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
         ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
@@ -111,35 +109,26 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ResizeSelfPrimary(SizeInt32 size)
     {
-        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoJoinHandle, size.Width, size.Height);
-        if (error != PulseErrorType.PULSE_SUCCESS)
-        {
-            Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
-        }
+        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfPreviewHandle, size.Width, size.Height);
     }
 
     [RelayCommand]
     private void ResizeConference(SizeInt32 size)
     {
-        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, VideoConferenceHandle, size.Width, size.Height);
-        if (error != PulseErrorType.PULSE_SUCCESS)
-        {
-            Debug.WriteLine($"DEBUG - Failed to resize video handle: {PulseError.pulse_strerror(error)}");
-        }
+        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, MainConferenceHandle, size.Width, size.Height);
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
-    private void Join()
+    private async Task JoinAsync()
     {
-        ConferenceCardEnabled = true;
-        VideoConferenceHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, 0xFF000000);
-        MainConferenceHandle = VideoConferenceHandle;
+        var server = VideoAlias.Contains('@') ? VideoAlias[(VideoAlias.IndexOf('@') + 1)..] : VideoAddress[(VideoAddress.IndexOf('@') + 1)..];
+        ConferenceCardEnabled = await JoinConferenceAsync(server, "your name", VideoAlias, "543419");
     }
 
-    [RelayCommand(CanExecute = nameof(CanLeave))]
-    private void Leave()
+    [RelayCommand]
+    private async Task LeaveAsync()
     {
-        // call Pexip Pulse to leave
+        ConferenceCardEnabled = !await LeaveConferenceAsync();
     }
 
     #endregion
@@ -158,76 +147,21 @@ public partial class MainViewModel : ObservableObject
 
     private bool CanJoin() => JoinCardEnabled;
 
-    private bool CanLeave() => true; // needs to evaluate if the user is in a Conference
-
     #endregion
 
-    partial void OnSelectedJoinCameraDeviceChanged(MediaDevice? oldValue, MediaDevice? value)
+    partial void OnSelectedJoinCameraDeviceChanged(MediaDevice? value)
     {
-        if (oldValue?.Uid == value?.Uid || value == null) return;
-
-        // Disconnect any existing camera first
-        PulseDeviceSession.pulse_device_session_disconnect_main_video(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, PulseMediaDirection.PULSE_MEDIA_INPUT);
-
-        if (oldValue != null)
-        {
-            oldValue.IsConnected = false;
-        }
-
-        // Connect device (before creating video handle)
-        if (ConnectMediaDevice(value, "Camera"))
-        {
-            // Destroy the old video handle if it exists
-            if (VideoJoinHandle != IntPtr.Zero)
-            {
-                PulseErrorType destroyError = PulseDeviceSession.pulse_device_session_release_video_handle(pulseInstance, VideoJoinHandle);
-                if (destroyError != PulseErrorType.PULSE_SUCCESS)
-                {
-                    Debug.WriteLine($"DEBUG - Failed to destroy old video handle: {PulseError.pulse_strerror(destroyError)}");
-                }
-            }
-
-            // Create video handle AFTER device is connected (so SwapChain has video source)
-            VideoJoinHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 466, 306, 0xFF000000);
-
-            Debug.WriteLine($"DEBUG - Created video handle: 0x{VideoJoinHandle:X}");
-
-            // Activate preview and set handle
-            SelfPreviewActive = true;
-            SelfPreviewHandle = VideoJoinHandle;
-
-            Debug.WriteLine($"DEBUG - Set SelfPreviewHandle: 0x{SelfPreviewHandle:X}, SelfPreviewActive: {SelfPreviewActive}");
-        }
+        ConnectMediaDevice(value, "Camera");
     }
 
-    partial void OnSelectedJoinSpeakerDeviceChanged(MediaDevice? oldValue, MediaDevice? newValue)
+    partial void OnSelectedJoinSpeakerDeviceChanged(MediaDevice? value)
     {
-        if (oldValue?.Uid == newValue?.Uid || newValue == null) return;
-
-        // Disconnect any existing speaker first
-        PulseErrorType disconnectError = PulseDeviceSession.pulse_device_session_disconnect_main_audio(pulseInstance);
-
-        if (disconnectError != PulseErrorType.PULSE_SUCCESS)
-        {
-            Debug.WriteLine($"DEBUG - Failed to disconnect existing speaker: {PulseError.pulse_strerror(disconnectError)}");
-        }
-
-        ConnectMediaDevice(newValue, "Speaker");
+        ConnectMediaDevice(value, "Speaker");
     }
 
-    partial void OnSelectedJoinMicDeviceChanged(MediaDevice? oldValue, MediaDevice? newValue)
+    partial void OnSelectedJoinMicDeviceChanged(MediaDevice? value)
     {
-        if (oldValue?.Uid == newValue?.Uid || newValue == null) return;
-
-        // Disconnect any existing microphone first
-        PulseErrorType disconnectError = PulseDeviceSession.pulse_device_session_disconnect_main_audio(pulseInstance);
-
-        if (disconnectError != PulseErrorType.PULSE_SUCCESS)
-        {
-            Debug.WriteLine($"DEBUG - Failed to disconnect existing speaker: {PulseError.pulse_strerror(disconnectError)}");
-        }
-
-        ConnectMediaDevice(newValue, "Microphone");
+        ConnectMediaDevice(value, "Microphone");
     }
 
     #region Device Connection Helpers
@@ -248,10 +182,6 @@ public partial class MainViewModel : ObservableObject
             };
 
             pulseError = PulseDevices.pulse_device_iterator_foreach(iterator.Handle, addDevice, 0);
-            if (pulseError != PulseErrorType.PULSE_SUCCESS)
-            {
-                Debug.WriteLine($"pulse_device_iterator_foreach failed with error: {pulseError}");
-            }
 
             switch ((mediaType, mediaDirection))
             {
@@ -274,12 +204,10 @@ public partial class MainViewModel : ObservableObject
 
         if (error != PulseErrorType.PULSE_SUCCESS)
         {
-            Debug.WriteLine($"DEBUG - Failed to connect {deviceTypeName.ToLower()}: {PulseError.pulse_strerror(error)}");
             device.IsConnected = false;
             return false;
         }
 
-        Debug.WriteLine($"DEBUG - Successfully connected {deviceTypeName.ToLower()}: {device.Name}");
         device.IsConnected = true;
         return true;
     }
@@ -339,7 +267,6 @@ public partial class MainViewModel : ObservableObject
                     {
                         this.dispatcherQueue.TryEnqueue(() => RegistrationProgress = $"{PulseError.pulse_strerror(err).ToString(Encoding.ASCII)}");
                         promise.TrySetResult(false);
-                        //                        this.userContext = user_context; // read it in - and try and use it for the devices
                     }
                 }
             },
@@ -383,5 +310,91 @@ public partial class MainViewModel : ObservableObject
         PulseIPC.pulse_ipc_free(handle);
 
         return token;
+    }
+
+    private async Task<bool> JoinConferenceAsync(string server, string displayName, string conferenceName, string pinCode)
+    {
+        var promise = new TaskCompletionSource<bool>();
+
+        // Set conference events callbacks
+        PulseOptions.pulse_options_set_conference_state_callback(
+            this.pulseInstance,
+            new PulseConferenceStatusCallbackConfig
+            {
+                func = (status_info, user_context) =>
+                {
+                    if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
+                    {
+                        promise.TrySetResult(true);
+                    }
+                },
+            });
+
+        // Connect
+        var error = PulseConnect.pulse_connect_with_rest_async(
+            this.pulseInstance,
+            new PulseRestConnectionConfig
+            {
+                server_address = server,
+                display_name = displayName,
+                conference_name = conferenceName,
+                pin_code = pinCode,
+            },
+            new PulseAsyncOperationResultCallbackConfig
+            {
+                func = (err, user_context) =>
+                {
+                    if (err != PulseErrorType.PULSE_SUCCESS)
+                    {
+                        this.dispatcherQueue.TryEnqueue(() => ConnectionProgress = $"{PulseError.pulse_strerror(err).ToString(Encoding.ASCII)}");
+                        promise.TrySetResult(false);
+                    }
+                },
+            },
+            new PulseOperationProgressCallbackConfig
+            {
+                func = (progress_info, user_context) =>
+                {
+                    var info = progress_info.ToStruct<PulseOperationProgressInfo>();
+                    this.dispatcherQueue.TryEnqueue(() => ConnectionProgress = $"{info.progress:P0} {info.desc}"); // Report Progress
+                },
+            });
+
+        return error is PulseErrorType.PULSE_SUCCESS && await promise.Task.ConfigureAwait(false);
+    }
+
+    private async Task<bool> LeaveConferenceAsync()
+    {
+        var promise = new TaskCompletionSource<bool>();
+
+        // Disconnect
+        var error = PulseConnect.pulse_disconnect_async(
+            this.pulseInstance,
+            new PulseAsyncOperationResultCallbackConfig
+            {
+                func = (err, user_context) =>
+                {
+                    if (err != PulseErrorType.PULSE_SUCCESS)
+                    {
+                        this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = $"{PulseError.pulse_strerror(err).ToString(Encoding.ASCII)}");
+                        promise.TrySetResult(false);
+                    }
+                    else
+                    {
+                        this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = string.Empty);
+                        promise.TrySetResult(true);
+                    }
+                }
+            },
+            new PulseOperationProgressCallbackConfig
+            {
+                func = (progress_info, user_context) =>
+                {
+                    var info = progress_info.ToStruct<PulseOperationProgressInfo>();
+                    this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = $"{info.progress:P0} {info.desc}"); // Report Progress
+                }
+            });
+
+        return error is PulseErrorType.PULSE_SUCCESS && await promise.Task.ConfigureAwait(false);
     }
 }
