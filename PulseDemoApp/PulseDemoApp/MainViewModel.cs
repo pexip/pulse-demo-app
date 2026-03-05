@@ -3,47 +3,30 @@
 // </copyright>
 
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.WinUI.Helpers;
 using Microsoft.UI.Dispatching;
-using Pexip.Pulse.NativeDelegates;
 using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
-using PulseDemoApp.Devices;
 using PulseDemoApp.Utilities;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
 using Windows.Graphics;
+using Windows.Media.Devices;
 
 namespace PulseDemoApp;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     private readonly IntPtr pulseInstance = PulseConnect.pulse_new();
 
-    #region Properties
+    #region Window Properties
 
     [ObservableProperty]
-    private MediaDevice? selectedJoinCameraDevice;
-
-    [ObservableProperty]
-    private MediaDevice? selectedJoinMicDevice;
-
-    [ObservableProperty]
-    private MediaDevice? selectedJoinSpeakerDevice;
-
-    [ObservableProperty]
-    private IntPtr selfPreviewHandle;
-
-    [ObservableProperty]
-    private IntPtr mainConferenceHandle;
-
-    [ObservableProperty]
-    private bool conferenceViewActive;
-
-    [ObservableProperty]
-    private bool metingAliasCardEnabled;
+    private bool connectionCardEnabled;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
@@ -52,12 +35,66 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool conferenceCardEnabled;
 
+    #endregion
+
+    #region Registration Card Properties
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
-    private string videoAddress = string.Empty;
+    private string videoAddress;
 
     [ObservableProperty]
     private string registrationProgress;
+
+    #endregion
+
+    #region Connection Card Properties
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ContinueCommand))]
+    private string videoAlias;
+
+    [ObservableProperty]
+    private string pinCode;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ContinueCommand))]
+    private string displayName;
+
+    #endregion
+
+    #region Join Card Properties
+
+    [ObservableProperty]
+    private IntPtr? selfVideoHandle;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
+    private PulseDevice? selectedCamera;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
+    private PulseDevice? selectedMicrophone;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
+    private PulseDevice? selectedSpeaker;
+
+    [ObservableProperty]
+    private IList<PulseDevice> cameras;
+
+    [ObservableProperty]
+    private IList<PulseDevice> microphones;
+
+    [ObservableProperty]
+    private IList<PulseDevice> speakers;
+
+    #endregion
+
+    #region Conference Card Properties
+
+    [ObservableProperty]
+    private IntPtr? mainVideoHandle;
 
     [ObservableProperty]
     private string connectionProgress;
@@ -65,26 +102,16 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string disconnectionProgress;
 
-    [ObservableProperty]
-    private MediaDevice[] cameras;
-
-    [ObservableProperty]
-    private MediaDevice[] mics;
-
-    [ObservableProperty]
-    private MediaDevice[] speakers;
-
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ContinueCommand))]
-    private string videoAlias;
-
-    private nint userContext;
-    private Microsoft.UI.Xaml.Controls.SwapChainPanel? cameraPreviewPanel;
-
     #endregion
 
-    public MainViewModel()
+    public void Dispose()
     {
+        // Disconnect if needed
+        bool connected = PulseConnect.pulse_is_connected(this.pulseInstance);
+        if (connected) PulseConnect.pulse_disconnect(this.pulseInstance, default);
+
+        // Destroy Pulse instance
+        PulseConnect.pulse_free(this.pulseInstance);
     }
 
     #region Commands
@@ -92,7 +119,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRegister))]
     private async Task RegisterAsync()
     {
-        MetingAliasCardEnabled = await RegisterWithSsoAsync();
+        ConnectionCardEnabled = await RegisterWithSsoAsync();
     }
 
     [RelayCommand(CanExecute = nameof(CanContinue))]
@@ -100,29 +127,31 @@ public partial class MainViewModel : ObservableObject
     {
         JoinCardEnabled = true;
 
-        SelfPreviewHandle = PulseDeviceSession.pulse_device_session_create_video_handle(pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 466, 306, 0xFF000000);
-        ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
+        Cameras = ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        Microphones = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        Speakers = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
     }
 
     [RelayCommand]
-    private void ResizeSelfPrimary(SizeInt32 size)
+    private void ResizeSelfView(SizeInt32 size)
     {
-        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfPreviewHandle, size.Width, size.Height);
+        PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfVideoHandle.Value, size.Width, size.Height);
     }
 
     [RelayCommand]
-    private void ResizeConference(SizeInt32 size)
+    private void ResizeMainView(SizeInt32 size)
     {
-        var error = PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, MainConferenceHandle, size.Width, size.Height);
+        PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, MainVideoHandle.Value, size.Width, size.Height);
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
     private async Task JoinAsync()
     {
-        var server = VideoAlias.Contains('@') ? VideoAlias[(VideoAlias.IndexOf('@') + 1)..] : VideoAddress[(VideoAddress.IndexOf('@') + 1)..];
-        ConferenceCardEnabled = await JoinConferenceAsync(server, "your name", VideoAlias, "543419");
+        MainVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, (ulong)"#FF212121".ToColor().ToInt());
+        ConferenceCardEnabled = await JoinConferenceAsync(
+            VideoAlias.Contains('@')
+                ? VideoAlias[(VideoAlias.IndexOf('@') + 1)..]
+                : VideoAddress[(VideoAddress.IndexOf('@') + 1)..]);
     }
 
     [RelayCommand]
@@ -135,84 +164,54 @@ public partial class MainViewModel : ObservableObject
 
     #region Command Validations
 
-    private bool CanRegister()
+    private bool CanRegister() =>
+        VideoAddress != null && new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
+
+    private bool CanContinue() =>
+        !string.IsNullOrWhiteSpace(DisplayName) &&
+        VideoAlias != null && new AliasValidator().ValidateRegisteredAlias(VideoAlias);
+
+    private bool CanJoin() =>
+        SelectedCamera != null &&
+        SelectedMicrophone != null &&
+        SelectedSpeaker != null;
+
+    #endregion
+
+    #region Property Changers
+
+    partial void OnSelectedCameraChanged(PulseDevice? value)
     {
-        return new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
+        SelfVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 196, 110, (ulong)"#212121".ToColor().ToInt());
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, value.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
     }
 
-    private bool CanContinue()
+    partial void OnSelectedSpeakerChanged(PulseDevice? value)
     {
-        return VideoAlias != null && new AliasValidator().ValidateRegisteredAlias(VideoAlias);
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, value.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
     }
 
-    private bool CanJoin() => JoinCardEnabled;
+    partial void OnSelectedMicrophoneChanged(PulseDevice? value)
+    {
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, value.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+    }
 
     #endregion
 
-    partial void OnSelectedJoinCameraDeviceChanged(MediaDevice? value)
+    private List<PulseDevice> ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
     {
-        ConnectMediaDevice(value, "Camera");
+        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(this.pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator);
+
+        var devices = new List<PulseDevice>();
+        pulseError = PulseDevices.pulse_device_iterator_foreach(
+            p_iterator,
+            (device, user_context) => devices.Add(device),
+            0);
+
+        PulseDevices.pulse_device_iterator_free(p_iterator);
+
+        return devices;
     }
-
-    partial void OnSelectedJoinSpeakerDeviceChanged(MediaDevice? value)
-    {
-        ConnectMediaDevice(value, "Speaker");
-    }
-
-    partial void OnSelectedJoinMicDeviceChanged(MediaDevice? value)
-    {
-        ConnectMediaDevice(value, "Microphone");
-    }
-
-    #region Device Connection Helpers
-
-    private void ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
-    {
-        var devices = new List<MediaDevice>();
-
-        devices.Add(new MediaDevice(0, "None", mediaType, mediaDirection, 0, false, false));
-
-        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator);
-
-        using (var iterator = new PulseDeviceIteratorHandle(p_iterator))
-        {
-            PulseDeviceIteratorFunc addDevice = (device, user_context) =>
-            {
-                devices.Add(new MediaDevice(device.id, device.name, device.media_type, device.media_direction, device.on_list, device.is_default != 0, true));
-            };
-
-            pulseError = PulseDevices.pulse_device_iterator_foreach(iterator.Handle, addDevice, 0);
-
-            switch ((mediaType, mediaDirection))
-            {
-                case (PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT):
-                    Cameras = (Cameras ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
-                    break;
-                case (PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT):
-                    Mics = (Mics ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
-                    break;
-                case (PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT):
-                    Speakers = (Speakers ?? Array.Empty<MediaDevice>()).Concat(devices).ToArray();
-                    break;
-            }
-        }
-    }
-
-    private bool ConnectMediaDevice(MediaDevice device, string deviceTypeName)
-    {
-        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(pulseInstance, device.ToPulseDevice(), PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
-
-        if (error != PulseErrorType.PULSE_SUCCESS)
-        {
-            device.IsConnected = false;
-            return false;
-        }
-
-        device.IsConnected = true;
-        return true;
-    }
-
-    #endregion
 
     private async Task<bool> RegisterWithSsoAsync()
     {
@@ -245,7 +244,7 @@ public partial class MainViewModel : ObservableObject
                 },
                 request_callback = (PulseSSOProviderRequest request, PulseSSOProviderSetToken setToken, IntPtr user_context) =>
                 {
-                    string? ssoToken = RequestSSOToken(new Uri(request.url), request.is_reconnect); // Trigger a SSO token request
+                    string? ssoToken = RequestSSOToken(new Uri(request.url)); // Trigger a SSO token request
                     return ssoToken is string token && setToken.func(setToken.context, token);
                 },
             });
@@ -284,13 +283,8 @@ public partial class MainViewModel : ObservableObject
         return success;
     }
 
-    private string? RequestSSOToken(Uri url, bool is_reconnect)
+    private string? RequestSSOToken(Uri url)
     {
-        if (url.Scheme != "https")
-        {
-            return null;
-        }
-
         // Spin up the default browser
         Process p = new Process();
         p.StartInfo.FileName = url.ToString();
@@ -312,7 +306,7 @@ public partial class MainViewModel : ObservableObject
         return token;
     }
 
-    private async Task<bool> JoinConferenceAsync(string server, string displayName, string conferenceName, string pinCode)
+    private async Task<bool> JoinConferenceAsync(string server)
     {
         var promise = new TaskCompletionSource<bool>();
 
@@ -336,9 +330,9 @@ public partial class MainViewModel : ObservableObject
             new PulseRestConnectionConfig
             {
                 server_address = server,
-                display_name = displayName,
-                conference_name = conferenceName,
-                pin_code = pinCode,
+                display_name = DisplayName,
+                conference_name = VideoAlias,
+                pin_code = PinCode,
             },
             new PulseAsyncOperationResultCallbackConfig
             {
@@ -382,6 +376,7 @@ public partial class MainViewModel : ObservableObject
                     else
                     {
                         this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = string.Empty);
+                        this.dispatcherQueue.TryEnqueue(() => ConnectionProgress = string.Empty);
                         promise.TrySetResult(true);
                     }
                 }

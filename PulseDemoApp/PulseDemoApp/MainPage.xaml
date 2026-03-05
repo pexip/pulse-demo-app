@@ -4,6 +4,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:nativestructs="using:Pexip.Pulse.NativeStructs"
   xmlns:usercontrols="using:PulseDemoApp.UserControls"
   mc:Ignorable="d">
 
@@ -35,14 +36,6 @@
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="IsHitTestVisible" Value="True" />
       <Setter Property="Visibility" Value="Visible" />
-    </Style>
-
-    <Style
-      x:Key="ButtonStyle"
-      TargetType="Button">
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="CornerRadius" Value="6" />
-      <Setter Property="Height" Value="36" />
     </Style>
 
   </Page.Resources>
@@ -91,34 +84,41 @@
           <TextBlock
             Margin="0 10 0 0"
             HorizontalAlignment="Left"
-            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay, TargetNullValue='Unregistered'}" />
+            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay}" />
         </StackPanel>
 
       </Border>
 
     </Grid>
 
-    <!-- Meeting Alias card -->
+    <!-- Connection card -->
     <Grid
       Grid.Row="0"
       Grid.Column="1">
 
       <TextBlock
         Style="{StaticResource CardHeaderStyle}"
-        Text="Meeting Alias" />
+        Text="Connection" />
 
       <Border Style="{StaticResource CardBorderStyle}">
 
         <StackPanel
+          Width="280"
           HorizontalAlignment="Center"
           VerticalAlignment="Center"
           Spacing="12">
           <TextBox
-            Width="340"
-            InputScope="EmailSmtpAddress"
             IsSpellCheckEnabled="False"
-            PlaceholderText="video alias ie meet.first.last@server.com"
+            PlaceholderText="Video Alias"
             Text="{x:Bind ViewModel.VideoAlias, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          <TextBox
+            IsSpellCheckEnabled="False"
+            PlaceholderText="Pin Code"
+            Text="{x:Bind ViewModel.PinCode, Mode=TwoWay}" />
+          <TextBox
+            IsSpellCheckEnabled="False"
+            PlaceholderText="Display Name"
+            Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
           <Button
             MinWidth="160"
             HorizontalAlignment="Center"
@@ -130,7 +130,7 @@
 
       <Border
         Style="{StaticResource DisabledOverlayStyle}"
-        Visibility="{x:Bind ViewModel.MetingAliasCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
+        Visibility="{x:Bind ViewModel.ConnectionCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
 
     </Grid>
 
@@ -145,67 +145,85 @@
 
       <Border Style="{StaticResource CardBorderStyle}">
 
-        <StackPanel
-          HorizontalAlignment="Center"
-          VerticalAlignment="Center"
-          Orientation="Vertical"
-          Spacing="12">
+        <Grid
+          MaxWidth="300"
+          RowSpacing="5">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
 
           <Grid
-            Width="196"
-            Height="110"
-            Background="#212121"
-            CornerRadius="8">
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Background="#212121">
 
-            <!-- Camera Preview -->
+            <!-- Self Video View -->
             <usercontrols:VideoView
-              Width="196"
-              Height="110"
-              Handle="{x:Bind ViewModel.SelfPreviewHandle, Mode=OneWay}"
+              Handle="{x:Bind ViewModel.SelfVideoHandle.Value, Mode=OneWay}"
               RenderTransformOrigin="0.5,0.5"
-              ResizeCommand="{x:Bind ViewModel.ResizeSelfPrimaryCommand}" />
+              ResizeCommand="{x:Bind ViewModel.ResizeSelfViewCommand}">
+              <usercontrols:VideoView.RenderTransform>
+                <ScaleTransform ScaleX="-1" />
+              </usercontrols:VideoView.RenderTransform>
+            </usercontrols:VideoView>
 
           </Grid>
 
-          <!-- Devices -->
-          <StackPanel
-            Width="300"
-            HorizontalAlignment="Left"
-            Spacing="5">
-            <ComboBox
-              HorizontalAlignment="Stretch"
-              DisplayMemberPath="Name"
-              ItemsSource="{x:Bind ViewModel.Cameras, Mode=OneWay}"
-              PlaceholderText="Camera"
-              SelectedItem="{x:Bind ViewModel.SelectedJoinCameraDevice, Mode=TwoWay}" />
+          <ComboBox
+            Grid.Row="1"
+            HorizontalAlignment="Stretch"
+            ItemsSource="{x:Bind ViewModel.Cameras, Mode=OneWay}"
+            PlaceholderText="Camera"
+            SelectedItem="{x:Bind ViewModel.SelectedCamera, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="nativestructs:PulseDevice">
+                <TextBlock Text="{x:Bind name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
 
-            <ComboBox
-              HorizontalAlignment="Stretch"
-              DisplayMemberPath="Name"
-              ItemsSource="{x:Bind ViewModel.Mics, Mode=OneWay}"
-              PlaceholderText="Mic"
-              SelectedItem="{x:Bind ViewModel.SelectedJoinMicDevice, Mode=TwoWay}" />
+          <ComboBox
+            Grid.Row="2"
+            HorizontalAlignment="Stretch"
+            ItemsSource="{x:Bind ViewModel.Microphones, Mode=OneWay}"
+            PlaceholderText="Mic"
+            SelectedItem="{x:Bind ViewModel.SelectedMicrophone, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="nativestructs:PulseDevice">
+                <TextBlock Text="{x:Bind name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
 
-            <ComboBox
-              HorizontalAlignment="Stretch"
-              DisplayMemberPath="Name"
-              ItemsSource="{x:Bind ViewModel.Speakers, Mode=OneWay}"
-              PlaceholderText="Speakers"
-              SelectedItem="{x:Bind ViewModel.SelectedJoinSpeakerDevice, Mode=TwoWay}" />
+          <ComboBox
+            Grid.Row="3"
+            HorizontalAlignment="Stretch"
+            ItemsSource="{x:Bind ViewModel.Speakers, Mode=OneWay}"
+            PlaceholderText="Speakers"
+            SelectedItem="{x:Bind ViewModel.SelectedSpeaker, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="nativestructs:PulseDevice">
+                <TextBlock Text="{x:Bind name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
 
-            <Button
-              Background="Green"
-              Command="{x:Bind ViewModel.JoinCommand}"
-              Content="Join With Video"
-              Style="{StaticResource ButtonStyle}" />
+          <Button
+            Grid.Row="4"
+            HorizontalAlignment="Stretch"
+            Command="{x:Bind ViewModel.JoinCommand}"
+            Content="Join With Video" />
 
-            <TextBlock
-              HorizontalAlignment="Left"
-              Text="{x:Bind ViewModel.ConnectionProgress, Mode=OneWay, TargetNullValue='Not connected'}" />
+          <TextBlock
+            Grid.Row="5"
+            Text="{x:Bind ViewModel.ConnectionProgress, Mode=OneWay}" />
 
-          </StackPanel>
-
-        </StackPanel>
+        </Grid>
 
       </Border>
 
@@ -233,23 +251,23 @@
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
 
-          <!-- Conference Camera -->
-          <usercontrols:VideoView
-            Width="666"
-            Height="606"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Handle="{x:Bind ViewModel.MainConferenceHandle, Mode=OneWay}"
-            ResizeCommand="{x:Bind ViewModel.ResizeConferenceCommand}" />
+          <Grid
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Background="#212121">
+            <!-- Main Video View -->
+            <usercontrols:VideoView
+              Handle="{x:Bind ViewModel.MainVideoHandle.Value, Mode=OneWay}"
+              ResizeCommand="{x:Bind ViewModel.ResizeMainViewCommand}" />
+          </Grid>
 
           <Button
             Grid.Row="1"
             Width="200"
             Margin="0 12 0 0"
-            Background="Red"
+            HorizontalAlignment="Stretch"
             Command="{x:Bind ViewModel.LeaveCommand}"
-            Content="Leave"
-            Style="{StaticResource ButtonStyle}" />
+            Content="Leave" />
 
           <TextBlock
             Grid.Row="2"

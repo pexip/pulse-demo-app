@@ -39,6 +39,7 @@ public partial class App : Application
         // illustrating WinUI-specific functionality.
         this.window = new MainWindow();
         this.window.Content = new MainPage(new MainViewModel());
+        this.window.Closed += (_, _) => ((MainPage)this.window.Content).ViewModel.Dispose();
 
         this.window.Activate();
     }
