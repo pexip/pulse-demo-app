@@ -80,6 +80,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
     private PulseDevice? selectedSpeaker;
 
+    [ObservableProperty]
+    private IList<PulseDevice> cameras;
+
+    [ObservableProperty]
+    private IList<PulseDevice> microphones;
+
+    [ObservableProperty]
+    private IList<PulseDevice> speakers;
+
     #endregion
 
     #region Conference Card Properties
@@ -105,12 +114,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PulseConnect.pulse_free(this.pulseInstance);
     }
 
-    public ObservableCollection<PulseDevice> Cameras { get; set; }
-
-    public ObservableCollection<PulseDevice> Microphones { get; set; }
-
-    public ObservableCollection<PulseDevice> Speakers { get; set; }
-
     #region Commands
 
     [RelayCommand(CanExecute = nameof(CanRegister))]
@@ -124,9 +127,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         JoinCardEnabled = true;
 
-        ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-        ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
+        Cameras = ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        Microphones = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        Speakers = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
     }
 
     [RelayCommand]
@@ -162,7 +165,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     #region Command Validations
 
     private bool CanRegister() =>
-        new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
+        VideoAddress != null && new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
 
     private bool CanContinue() =>
         !string.IsNullOrWhiteSpace(DisplayName) &&
@@ -373,6 +376,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     else
                     {
                         this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = string.Empty);
+                        this.dispatcherQueue.TryEnqueue(() => ConnectionProgress = string.Empty);
                         promise.TrySetResult(true);
                     }
                 }
