@@ -8,11 +8,11 @@ using Microsoft.UI.Dispatching;
 using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
+using PulseDemoApp.UserControls;
 using PulseDemoApp.Utilities;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using Windows.Foundation;
 using Windows.Graphics;
 
 namespace PulseDemoApp;
@@ -131,9 +131,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void PickCamera(Size size)
+    private void PickCamera(VideoView view)
     {
-        SelfVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, (int)size.Width, (int)size.Height, (ulong)"#212121".ToColor().ToInt());
+        SelfVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, (int)view.ActualWidth, (int)view.ActualHeight, (ulong)"#212121".ToColor().ToInt());
         PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedCamera!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
     }
 
@@ -162,9 +162,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
-    private async Task JoinAsync(Size size)
+    private async Task JoinAsync(VideoView videoView)
     {
-        MainVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, (int)size.Width, (int)size.Height, (ulong)"#FF212121".ToColor().ToInt());
+        MainVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, (int)videoView.ActualWidth, (int)videoView.ActualHeight, (ulong)"#FF212121".ToColor().ToInt());
         ConferenceCardEnabled = await JoinConferenceAsync(
             VideoAlias.Contains('@')
                 ? VideoAlias[(VideoAlias.IndexOf('@') + 1)..]

@@ -186,7 +186,7 @@
               <interactivity:EventTriggerBehavior EventName="SelectionChanged">
                 <interactivity:InvokeCommandAction
                   Command="{x:Bind ViewModel.PickCameraCommand}"
-                  CommandParameter="{Binding RenderSize, ElementName=SelfVideoView}" />
+                  CommandParameter="{Binding ElementName=SelfVideoView}" />
               </interactivity:EventTriggerBehavior>
             </interactivity:Interaction.Behaviors>
             <ComboBox.ItemTemplate>
@@ -236,7 +236,7 @@
             Grid.Row="4"
             HorizontalAlignment="Stretch"
             Command="{x:Bind ViewModel.JoinCommand}"
-            CommandParameter="{Binding RenderSize, ElementName=MainVideoView}"
+            CommandParameter="{Binding ElementName=MainVideoView}"
             Content="Join With Video" />
 
           <TextBlock
