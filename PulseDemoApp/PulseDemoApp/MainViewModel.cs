@@ -10,11 +10,10 @@ using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
 using PulseDemoApp.Utilities;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
+using Windows.Foundation;
 using Windows.Graphics;
-using Windows.Media.Devices;
 
 namespace PulseDemoApp;
 
@@ -29,7 +28,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool connectionCardEnabled;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(JoinCommand))]
     private bool joinCardEnabled;
 
     [ObservableProperty]
@@ -133,6 +131,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void PickCamera(Size size)
+    {
+        SelfVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, (int)size.Width, (int)size.Height, (ulong)"#212121".ToColor().ToInt());
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedCamera!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+    }
+
+    [RelayCommand]
+    private void PickMicrophone()
+    {
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedMicrophone!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+    }
+
+    [RelayCommand]
+    private void PickSpeaker()
+    {
+        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedSpeaker!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+    }
+
+    [RelayCommand]
     private void ResizeSelfView(SizeInt32 size)
     {
         PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfVideoHandle.Value, size.Width, size.Height);
@@ -145,9 +162,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
-    private async Task JoinAsync()
+    private async Task JoinAsync(Size size)
     {
-        MainVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, 366, 206, (ulong)"#FF212121".ToColor().ToInt());
+        MainVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN, (int)size.Width, (int)size.Height, (ulong)"#FF212121".ToColor().ToInt());
         ConferenceCardEnabled = await JoinConferenceAsync(
             VideoAlias.Contains('@')
                 ? VideoAlias[(VideoAlias.IndexOf('@') + 1)..]
@@ -175,26 +192,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SelectedCamera != null &&
         SelectedMicrophone != null &&
         SelectedSpeaker != null;
-
-    #endregion
-
-    #region Property Changers
-
-    partial void OnSelectedCameraChanged(PulseDevice? value)
-    {
-        SelfVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, 196, 110, (ulong)"#212121".ToColor().ToInt());
-        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, value.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
-    }
-
-    partial void OnSelectedSpeakerChanged(PulseDevice? value)
-    {
-        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, value.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
-    }
-
-    partial void OnSelectedMicrophoneChanged(PulseDevice? value)
-    {
-        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, value.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
-    }
 
     #endregion
 
