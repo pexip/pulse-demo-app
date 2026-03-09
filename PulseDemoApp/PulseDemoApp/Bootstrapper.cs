@@ -65,7 +65,7 @@ public static class Bootstrapper
 
     private static void RedirectActivationTo(AppInstance appInstance, AppActivationArguments activationArgs)
     {
-        var signal = new Semaphore(0, 1);
+        using var signal = new Semaphore(0, 1);
         Task.Run(() =>
         {
             appInstance.RedirectActivationToAsync(activationArgs).AsTask().Wait();

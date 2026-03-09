@@ -21,6 +21,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     private readonly IntPtr pulseInstance = PulseConnect.pulse_new();
+    private bool disposed;
 
     #region Window Properties
 
@@ -110,6 +111,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
+        if (this.disposed)
+        {
+            return;
+        }
+
         if (disposing)
         {
             // Disconnect if needed
@@ -123,6 +129,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             // Destroy Pulse instance
             PulseConnect.pulse_free(this.pulseInstance);
         }
+
+        this.disposed = true;
     }
 
     #region Commands
@@ -165,13 +173,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ResizeSelfView(SizeInt32 size)
     {
-        PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfVideoHandle.Value, size.Width, size.Height);
+        if (SelfVideoHandle.HasValue)
+        {
+            PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfVideoHandle.Value, size.Width, size.Height);
+        }
     }
 
     [RelayCommand]
     private void ResizeMainView(SizeInt32 size)
     {
-        PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, MainVideoHandle.Value, size.Width, size.Height);
+        if (MainVideoHandle.HasValue)
+        {
+            PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, MainVideoHandle.Value, size.Width, size.Height);
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
@@ -296,7 +310,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string? RequestSSOToken(Uri url)
     {
         // Spin up the default browser
-        Process p = new Process();
+        using Process p = new Process();
         p.StartInfo.FileName = url.ToString();
         p.StartInfo.UseShellExecute = true; // use the default browser
         p.StartInfo.RedirectStandardOutput = false; // we do not want the standard output here
@@ -307,9 +321,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         // Waiting for the SSO completion
         PulseErrorType error = PulseIPC.pulse_ipc_read_line(handle, out IntPtr pData, IntPtr.Zero, 1000, 60 * 1000);
-        string? token = error == PulseErrorType.PULSE_SUCCESS
-            ? pData.ToString(Encoding.ASCII).Split('=')[1]
-            : null;
+        string? token = null;
+        if (error == PulseErrorType.PULSE_SUCCESS)
+        {
+            string[] parts = pData.ToString(Encoding.ASCII).Split('=');
+            if (parts.Length > 1)
+            {
+                token = parts[1];
+            }
+        }
 
         PulseIPC.pulse_ipc_free(handle);
 
