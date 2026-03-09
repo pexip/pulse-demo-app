@@ -38,10 +38,6 @@ public static class Bootstrapper
 
                 return true;
             }
-            else
-            {
-                return true;
-            }
 
             appInstance.Activated += AppInstanceActivated;
         }
