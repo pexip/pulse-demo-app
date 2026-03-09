@@ -195,11 +195,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     #region Command Validations
 
     private bool CanRegister() =>
-        VideoAddress != null && new AliasValidator().ValidateFullyQualifiedAlias(VideoAddress);
+        VideoAddress != null && AliasValidator.ValidateFullyQualifiedAlias(VideoAddress);
 
     private bool CanContinue() =>
         !string.IsNullOrWhiteSpace(DisplayName) &&
-        VideoAlias != null && new AliasValidator().ValidateRegisteredAlias(VideoAlias);
+        VideoAlias != null && AliasValidator.ValidateRegisteredAlias(VideoAlias);
 
     private bool CanJoin() =>
         SelectedCamera != null &&
@@ -296,12 +296,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string? RequestSSOToken(Uri url)
     {
         // Spin up the default browser
-        Process p = new Process();
-        p.StartInfo.FileName = url.ToString();
-        p.StartInfo.UseShellExecute = true; // use the default browser
-        p.StartInfo.RedirectStandardOutput = false; // we do not want the standard output here
-        p.StartInfo.CreateNoWindow = false; // the browser should show up in a separate window
-        p.Start();
+        using (var p = new Process())
+        {
+            p.StartInfo.FileName = url.ToString();
+            p.StartInfo.UseShellExecute = true; // use the default browser
+            p.StartInfo.RedirectStandardOutput = false; // we do not want the standard output here
+            p.StartInfo.CreateNoWindow = false; // the browser should show up in a separate window
+            p.Start();
+        }
 
         IntPtr handle = PulseIPC.pulse_ipc_new("PulseWinClientSSOPipe", 16 * 1024);
 
