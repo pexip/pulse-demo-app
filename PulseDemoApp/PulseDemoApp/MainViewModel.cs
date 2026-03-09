@@ -104,12 +104,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        // Disconnect if needed
-        bool connected = PulseConnect.pulse_is_connected(this.pulseInstance);
-        if (connected) PulseConnect.pulse_disconnect(this.pulseInstance, default);
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-        // Destroy Pulse instance
-        PulseConnect.pulse_free(this.pulseInstance);
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // Disconnect if needed
+            bool connected = PulseConnect.pulse_is_connected(this.pulseInstance);
+            if (connected) PulseConnect.pulse_disconnect(this.pulseInstance, default);
+
+            // Destroy Video handles
+            if (SelfVideoHandle.HasValue) PulseDeviceSession.pulse_device_session_release_video_handle(this.pulseInstance, SelfVideoHandle.Value);
+            if (MainVideoHandle.HasValue) PulseDeviceSession.pulse_device_session_release_video_handle(this.pulseInstance, MainVideoHandle.Value);
+
+            // Destroy Pulse instance
+            PulseConnect.pulse_free(this.pulseInstance);
+        }
     }
 
     #region Commands
