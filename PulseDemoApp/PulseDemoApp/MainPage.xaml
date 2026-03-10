@@ -85,7 +85,7 @@
           <TextBlock
             Margin="0 10 0 0"
             HorizontalAlignment="Left"
-            Text="{x:Bind ViewModel.RegistrationProgress, Mode=OneWay}" />
+            Text="{x:Bind ViewModel.RegistrationCardLogs, Mode=OneWay}" />
         </StackPanel>
 
       </Border>
@@ -241,7 +241,7 @@
 
           <TextBlock
             Grid.Row="5"
-            Text="{x:Bind ViewModel.ConnectionProgress, Mode=OneWay}" />
+            Text="{x:Bind ViewModel.JoinCardLogs, Mode=OneWay}" />
 
         </Grid>
 
@@ -292,7 +292,7 @@
 
           <TextBlock
             Grid.Row="2"
-            Text="{x:Bind ViewModel.DisconnectionProgress, Mode=OneWay, TargetNullValue=''}" />
+            Text="{x:Bind ViewModel.ConferenceCardLogs, Mode=OneWay, TargetNullValue=''}" />
         </Grid>
 
       </Border>
