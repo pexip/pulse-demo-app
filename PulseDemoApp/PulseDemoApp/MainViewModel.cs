@@ -21,8 +21,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     private readonly IntPtr pulseInstance = PulseConnect.pulse_new();
+    private enum CardType
+    {
+        Registration,
+        Connection,
+        Join,
+        Conference
+    }
 
     #region Window Properties
+
+    [ObservableProperty]
+    private string registrationCardLogs;
 
     [ObservableProperty]
     private bool connectionCardEnabled;
@@ -31,7 +41,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool joinCardEnabled;
 
     [ObservableProperty]
+    private string joinCardLogs;
+
+    [ObservableProperty]
     private bool conferenceCardEnabled;
+
+    [ObservableProperty]
+    private string conferenceCardLogs;
 
     #endregion
 
@@ -40,9 +56,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
     private string videoAddress;
-
-    [ObservableProperty]
-    private string registrationProgress;
 
     #endregion
 
@@ -94,13 +107,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private IntPtr? mainVideoHandle;
 
-    [ObservableProperty]
-    private string connectionProgress;
-
-    [ObservableProperty]
-    private string disconnectionProgress;
-
     #endregion
+
+    public MainViewModel()
+    {
+        this.cameras = ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        this.microphones = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
+        this.speakers = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
+    }
 
     public void Dispose()
     {
@@ -137,41 +151,47 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void Continue()
     {
         JoinCardEnabled = true;
-
-        Cameras = ReadDevices(PulseMediaType.PULSE_MEDIA_VIDEO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-        Microphones = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_INPUT);
-        Speakers = ReadDevices(PulseMediaType.PULSE_MEDIA_AUDIO, PulseMediaDirection.PULSE_MEDIA_OUTPUT);
     }
 
     [RelayCommand]
     private void PickCamera(VideoView view)
     {
         SelfVideoHandle ??= PulseDeviceSession.pulse_device_session_create_video_handle(this.pulseInstance, PulseMediaContent.PULSE_MEDIA_CONTENT_SELFVIEW, (int)view.ActualWidth, (int)view.ActualHeight, (ulong)"#212121".ToColor().ToInt());
-        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedCamera!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+        ReportError(
+            PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedCamera!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN),
+            CardType.Join);
     }
 
     [RelayCommand]
     private void PickMicrophone()
     {
-        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedMicrophone!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+        ReportError(
+            PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedMicrophone!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN),
+            CardType.Join);
     }
 
     [RelayCommand]
     private void PickSpeaker()
     {
-        PulseErrorType error = PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedSpeaker!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN);
+        ReportError(
+            PulseDeviceSession.pulse_device_session_connect_device(this.pulseInstance, SelectedSpeaker!.Value, PulseMediaContent.PULSE_MEDIA_CONTENT_MAIN),
+            CardType.Join);
     }
 
     [RelayCommand]
     private void ResizeSelfView(SizeInt32 size)
     {
-        PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfVideoHandle.Value, size.Width, size.Height);
+        ReportError(
+            PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, SelfVideoHandle.Value, size.Width, size.Height),
+            CardType.Join);
     }
 
     [RelayCommand]
     private void ResizeMainView(SizeInt32 size)
     {
-        PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, MainVideoHandle.Value, size.Width, size.Height);
+        ReportError(
+            PulseDeviceSession.pulse_device_session_resize_video_handle(this.pulseInstance, MainVideoHandle.Value, size.Width, size.Height),
+            CardType.Conference);
     }
 
     [RelayCommand(CanExecute = nameof(CanJoin))]
@@ -210,13 +230,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private List<PulseDevice> ReadDevices(PulseMediaType mediaType, PulseMediaDirection mediaDirection)
     {
-        PulseErrorType pulseError = PulseDevices.pulse_device_iterator_new(this.pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator);
+        ReportError(
+            PulseDevices.pulse_device_iterator_new(this.pulseInstance, mediaType, mediaDirection, out IntPtr p_iterator),
+            CardType.Join);
 
         var devices = new List<PulseDevice>();
-        pulseError = PulseDevices.pulse_device_iterator_foreach(
-            p_iterator,
-            (device, user_context) => devices.Add(device),
-            0);
+        ReportError(
+            PulseDevices.pulse_device_iterator_foreach(
+                p_iterator,
+                (device, user_context) => devices.Add(device),
+                0),
+            CardType.Join);
 
         PulseDevices.pulse_device_iterator_free(p_iterator);
 
@@ -228,36 +252,40 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var promise = new TaskCompletionSource<bool>();
 
         // Set registration events callbacks
-        PulseOptions.pulse_options_set_registration_state_callback(
-            this.pulseInstance,
-            new PulseRegistrationStatusCallbackConfig
-            {
-                func = (status_info, user_context) =>
+        ReportError(
+            PulseOptions.pulse_options_set_registration_state_callback(
+                this.pulseInstance,
+                new PulseRegistrationStatusCallbackConfig
                 {
-                    if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
+                    func = (status_info, user_context) =>
                     {
-                        promise.TrySetResult(true);
+                        if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
+                        {
+                            promise.TrySetResult(true);
+                        }
                     }
-                }
-            });
+                }),
+            CardType.Registration);
 
         // Set SSO callbacks
-        PulseOptions.pulse_options_set_sso_provider_callbacks(
-            this.pulseInstance,
-            new PulseSSOProviderCallbackConfig
-            {
-                selection_callback = (ref PulseSSOProviderList list, IntPtr user_context) =>
+        ReportError(
+            PulseOptions.pulse_options_set_sso_provider_callbacks(
+                this.pulseInstance,
+                new PulseSSOProviderCallbackConfig
                 {
-                    var providers = list.providers.ToStructs<PulseSSOProvider>(list.num, false);
-                    bool accepted = true; // Waiting for the user to accept the ssoProvider(s)
-                    return accepted ? 0 : -1;
-                },
-                request_callback = (PulseSSOProviderRequest request, PulseSSOProviderSetToken setToken, IntPtr user_context) =>
-                {
-                    string? ssoToken = RequestSSOToken(new Uri(request.url)); // Trigger a SSO token request
-                    return ssoToken is string token && setToken.func(setToken.context, token);
-                },
-            });
+                    selection_callback = (ref PulseSSOProviderList list, IntPtr user_context) =>
+                    {
+                        var providers = list.providers.ToStructs<PulseSSOProvider>(list.num, false);
+                        bool accepted = true; // Waiting for the user to accept the ssoProvider(s)
+                        return accepted ? 0 : -1;
+                    },
+                    request_callback = (PulseSSOProviderRequest request, PulseSSOProviderSetToken setToken, IntPtr user_context) =>
+                    {
+                        string? ssoToken = RequestSSOToken(new Uri(request.url)); // Trigger a SSO token request
+                        return ssoToken is string token && setToken.func(setToken.context, token);
+                    },
+                }),
+            CardType.Registration);
 
         // Register
         PulseErrorType error = PulseRegistration.pulse_register_async(
@@ -274,7 +302,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 {
                     if (err != PulseErrorType.PULSE_SUCCESS)
                     {
-                        this.dispatcherQueue.TryEnqueue(() => RegistrationProgress = $"{PulseError.pulse_strerror(err).ToString(Encoding.ASCII)}");
+                        ReportError(err, CardType.Registration);
                         promise.TrySetResult(false);
                     }
                 }
@@ -284,7 +312,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 func = (progress_info, user_context) =>
                 {
                     var info = progress_info.ToStruct<PulseOperationProgressInfo>();
-                    this.dispatcherQueue.TryEnqueue(() => RegistrationProgress = $"{info.progress:P0} {info.desc}"); // Report Progress
+                    this.dispatcherQueue.TryEnqueue(() => RegistrationCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
                 }
             });
 
@@ -350,7 +378,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 {
                     if (err != PulseErrorType.PULSE_SUCCESS)
                     {
-                        this.dispatcherQueue.TryEnqueue(() => ConnectionProgress = $"{PulseError.pulse_strerror(err).ToString(Encoding.ASCII)}");
+                        ReportError(err, CardType.Join);
                         promise.TrySetResult(false);
                     }
                 },
@@ -360,7 +388,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 func = (progress_info, user_context) =>
                 {
                     var info = progress_info.ToStruct<PulseOperationProgressInfo>();
-                    this.dispatcherQueue.TryEnqueue(() => ConnectionProgress = $"{info.progress:P0} {info.desc}"); // Report Progress
+                    this.dispatcherQueue.TryEnqueue(() => JoinCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
                 },
             });
 
@@ -380,13 +408,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 {
                     if (err != PulseErrorType.PULSE_SUCCESS)
                     {
-                        this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = $"{PulseError.pulse_strerror(err).ToString(Encoding.ASCII)}");
+                        ReportError(err, CardType.Conference);
                         promise.TrySetResult(false);
                     }
                     else
                     {
-                        this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = string.Empty);
-                        this.dispatcherQueue.TryEnqueue(() => ConnectionProgress = string.Empty);
+                        this.dispatcherQueue.TryEnqueue(() => ConferenceCardLogs = string.Empty);
+                        this.dispatcherQueue.TryEnqueue(() => JoinCardLogs = string.Empty);
                         promise.TrySetResult(true);
                     }
                 }
@@ -396,10 +424,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 func = (progress_info, user_context) =>
                 {
                     var info = progress_info.ToStruct<PulseOperationProgressInfo>();
-                    this.dispatcherQueue.TryEnqueue(() => DisconnectionProgress = $"{info.progress:P0} {info.desc}"); // Report Progress
+                    this.dispatcherQueue.TryEnqueue(() => ConferenceCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
                 }
             });
 
         return error is PulseErrorType.PULSE_SUCCESS && await promise.Task.ConfigureAwait(false);
+    }
+
+    private void ReportError(PulseErrorType err, CardType cardType)
+    {
+        if (err != PulseErrorType.PULSE_SUCCESS)
+        {
+            string errMessage = PulseError.pulse_strerror(err).ToString(Encoding.ASCII);
+            Action logOnCard = cardType switch
+            {
+                CardType.Registration => () => RegistrationCardLogs = errMessage,
+                CardType.Join => () => JoinCardLogs = errMessage,
+                CardType.Conference => () => ConferenceCardLogs = errMessage,
+                _ => throw new NotImplementedException(),
+            };
+
+            if (this.dispatcherQueue.HasThreadAccess) logOnCard();
+            else this.dispatcherQueue.TryEnqueue(() => logOnCard());
+        }
     }
 }
