@@ -296,14 +296,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string? RequestSSOToken(Uri url)
     {
         // Spin up the default browser
-        using (var p = new Process())
-        {
-            p.StartInfo.FileName = url.ToString();
-            p.StartInfo.UseShellExecute = true; // use the default browser
-            p.StartInfo.RedirectStandardOutput = false; // we do not want the standard output here
-            p.StartInfo.CreateNoWindow = false; // the browser should show up in a separate window
-            p.Start();
-        }
+        using var p = new Process();
+        p.StartInfo.FileName = url.ToString();
+        p.StartInfo.UseShellExecute = true; // use the default browser
+        p.StartInfo.RedirectStandardOutput = false; // we do not want the standard output here
+        p.StartInfo.CreateNoWindow = false; // the browser should show up in a separate window
+        p.Start();
 
         IntPtr handle = PulseIPC.pulse_ipc_new("PulseWinClientSSOPipe", 16 * 1024);
 

@@ -67,11 +67,11 @@ public sealed partial class VideoView : UserControl
 
     private void VideoView_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (Handle != default && ResizeCommand != null)
+        if (Handle != default)
         {
             int width = (int)Math.Ceiling(e.NewSize.Width);
             int height = (int)Math.Ceiling(e.NewSize.Height);
-            ResizeCommand.Execute(new SizeInt32(width, height));
+            ResizeCommand?.Execute(new SizeInt32(width, height));
         }
     }
 
