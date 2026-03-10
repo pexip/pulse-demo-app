@@ -71,7 +71,7 @@ public sealed partial class VideoView : UserControl
         {
             int width = (int)Math.Ceiling(e.NewSize.Width);
             int height = (int)Math.Ceiling(e.NewSize.Height);
-            ResizeCommand.Execute(new SizeInt32(width, height));
+            ResizeCommand?.Execute(new SizeInt32(width, height));
         }
     }
 
@@ -132,9 +132,6 @@ public sealed partial class VideoView : UserControl
         catch (Exception ex)
         {
             Debug.WriteLine($"ERROR in VideoView.BindHandle: {ex.Message} {ex.StackTrace}");
-        }
-        finally
-        {
         }
     }
 }

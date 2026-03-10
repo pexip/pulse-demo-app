@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations;
 public sealed class AliasValidator
 {
     // FQDN provided
-    public bool ValidateFullyQualifiedAlias(string alias)
+    public static bool ValidateFullyQualifiedAlias(string alias)
     {
         var context = new ValidationContext(alias);
         var attributes = new List<ValidationAttribute>
@@ -27,7 +27,7 @@ public sealed class AliasValidator
     }
 
     // FQDN inferred
-    public bool ValidateRegisteredAlias(string address)
+    public static bool ValidateRegisteredAlias(string address)
     {
         var context = new ValidationContext(address);
         var attributes = new List<ValidationAttribute>
