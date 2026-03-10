@@ -77,6 +77,6 @@ public static class Bootstrapper
     private static void HandleSSORequest(IProtocolActivatedEventArgs activatedArgs)
     {
         var ssoToken = activatedArgs.Uri.ToString();
-        PulseErrorType error = PulseIPC.pulse_ipc_write_line("PulseWinClientSSOPipe", ssoToken);
+        PulseIPC.pulse_ipc_write_line("PulseWinClientSSOPipe", ssoToken);
     }
 }
