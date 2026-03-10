@@ -6,13 +6,13 @@
 
 A .NET getting-started sample application demonstrating how to integrate the **Pexip Pulse SDK** ([`Pexip.Pulse`](https://www.pexip.com/) NuGet package) into a Windows desktop app. It is built with .NET 8, WinUI 3, and packaged with MSIX.
 
-The demo covers the full conferencing lifecycle — SSO-based registration, device selection, joining a video call, and graceful disconnect — so that you can use it as a reference when building your own application on top of the Pexip Infinity platform.
+The demo covers the full conferencing lifecycle - SSO-based registration, device selection, joining a video call, and graceful disconnect - so that you can use it as a reference when building your own application on top of the Pexip Infinity platform.
 
 ## Technologies
 
 | Package / Framework | Purpose |
 |---|---|
-| [`Pexip.Pulse`](https://www.pexip.com/) | **Pexip Pulse SDK** — core conferencing engine |
+| [`Pexip.Pulse`](https://www.pexip.com/) | **Pexip Pulse SDK** - core conferencing engine |
 | [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) | Target runtime |
 | [WinUI 3](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/) | Modern Windows UI framework |
 | [Windows App SDK](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/) | WinUI 3 host |
@@ -52,7 +52,7 @@ The Pexip Pulse SDK is distributed as the `Pexip.Pulse` NuGet package from a **p
   <packageSources>
     <!-- Public packages (Microsoft.*, CommunityToolkit.*) -->
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <!-- Pexip private feed — hosts Pexip.* packages -->
+    <!-- Pexip private feed - hosts Pexip.* packages -->
     <add key="MediaMain" value="https://artifactory.geo.ci.pexip.com/artifactory/api/nuget/v3/media-nuget-main/index.json" />
   </packageSources>
   <packageSourceMapping>
@@ -100,7 +100,7 @@ using Pexip.Pulse.NativeStructs;
 All SDK calls require a `pulseInstance` handle. Create it once at startup and free it when the application exits.
 
 ```csharp
-// Create once — keep for the lifetime of the component
+// Create once - keep for the lifetime of the component
 IntPtr pulseInstance = PulseConnect.pulse_new();
 
 // Free when done (e.g. in Dispose())
@@ -146,7 +146,7 @@ PulseOptions.pulse_options_set_registration_state_callback(
         {
             if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
             {
-                // Registration succeeded — enable the next step in the UI
+                // Registration succeeded - enable the next step in the UI
             }
         }
     });
@@ -238,7 +238,7 @@ PulseOptions.pulse_options_set_conference_state_callback(
         {
             if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
             {
-                // Joined — show the conference UI
+                // Joined - show the conference UI
             }
         },
     });
@@ -289,16 +289,16 @@ if (err != PulseErrorType.PULSE_SUCCESS)
 
 ```
 PulseDemoApp/
-├── App.xaml(.cs)           — WinUI 3 application entry, window setup
-├── MainWindow.xaml(.cs)    — Top-level window
-├── MainPage.xaml(.cs)      — Page host; injects MainViewModel
-├── MainViewModel.cs        — All SDK interactions via MVVM commands
-├── Bootstrapper.cs         — Single-instance + SSO protocol handling
+├── App.xaml(.cs)           - WinUI 3 application entry, window setup
+├── MainWindow.xaml(.cs)    - Top-level window
+├── MainPage.xaml(.cs)      - Page host; injects MainViewModel
+├── MainViewModel.cs        - All SDK interactions via MVVM commands
+├── Bootstrapper.cs         - Single-instance + SSO protocol handling
 ├── UserControls/
-│   └── VideoView.xaml(.cs) — SwapChainPanel wrapper for SDK video handles
+│   └── VideoView.xaml(.cs) - SwapChainPanel wrapper for SDK video handles
 └── Utilities/
-    ├── AliasValidator.cs   — Input validation helpers
-    └── Extensions.cs       — Native ↔ managed interop helpers
+    ├── AliasValidator.cs   - Input validation helpers
+    └── Extensions.cs       - Native ↔ managed interop helpers
 ```
 
 The UI is divided into four progressive cards:
