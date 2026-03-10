@@ -109,14 +109,16 @@ public sealed partial class VideoView : UserControl
 
     private void BindHandle(/* IDXGISwapChain1 */ IntPtr swapChainPtr)
     {
+        IntPtr panelObj = IntPtr.Zero;
+        IntPtr panelPtr = IntPtr.Zero;
+
         try
         {
             // Cast SwapChainPanel to IInspectable (IInspectable is the base interface for XAML objects in C++)
-            var panelObj = Marshal.GetIUnknownForObject(this.SwapChainPanel);
+            panelObj = Marshal.GetIUnknownForObject(this.SwapChainPanel);
 
             // Query for ISwapChainPanelNative from the native object
             var guid = typeof(ISwapChainPanelNative).GUID;
-            IntPtr panelPtr;
             Marshal.QueryInterface(panelObj, ref guid, out panelPtr);
 
             // Cast the returned pointer to ISwapChainPanelNative
@@ -124,14 +126,16 @@ public sealed partial class VideoView : UserControl
 
             // Call SetSwapChain with your swap chain pointer
             panelNative.SetSwapChain(swapChainPtr);
-
-            // Release the COM objects
-            Marshal.Release(panelObj);
-            Marshal.Release(panelPtr);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"ERROR in VideoView.BindHandle: {ex.Message} {ex.StackTrace}");
+        }
+        finally
+        {
+            // Release the COM objects
+            if (panelPtr != IntPtr.Zero) Marshal.Release(panelPtr);
+            if (panelObj != IntPtr.Zero) Marshal.Release(panelObj);
         }
     }
 }
