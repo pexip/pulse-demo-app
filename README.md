@@ -43,7 +43,7 @@ Open `PulseDemoApp.sln` in Visual Studio 2022, select the desired platform (`x64
 
 ## NuGet Setup
 
-The Pexip Pulse SDK is distributed as the `Pexip.Pulse` NuGet package from a **private Pexip Artifactory feed**. The repository already ships a `nuget.config` that configures both the public nuget.org feed and the Pexip feed:
+The Pexip Pulse SDK is distributed via the `Pexip.Pulse` NuGet package. To use it, place the **.nupkg** file in a **local feed**. Then, update the **nuget.config** to reference your local feed:
 
 ```xml
 <!-- PulseDemoApp/nuget.config -->
@@ -52,19 +52,9 @@ The Pexip Pulse SDK is distributed as the `Pexip.Pulse` NuGet package from a **p
   <packageSources>
     <!-- Public packages (Microsoft.*, CommunityToolkit.*) -->
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <!-- Pexip private feed - hosts Pexip.* packages -->
-    <add key="MediaMain" value="https://artifactory.geo.ci.pexip.com/artifactory/api/nuget/v3/media-nuget-main/index.json" />
+    <!-- Pexip local feed - hosts Pexip.* packages -->
+    <add key="Pexip" value="__local_feed_path__" />
   </packageSources>
-  <packageSourceMapping>
-    <packageSource key="nuget.org">
-      <package pattern="Microsoft.*" />
-      <package pattern="CommunityToolkit.*" />
-    </packageSource>
-    <!-- Route all Pexip.* packages to the private feed -->
-    <packageSource key="MediaMain">
-      <package pattern="Pexip.*" />
-    </packageSource>
-  </packageSourceMapping>
 </configuration>
 ```
 
