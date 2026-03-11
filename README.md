@@ -67,8 +67,6 @@ The SDK is then referenced in the project file like any other NuGet package:
 </ItemGroup>
 ```
 
-> **Note:** You must have valid credentials for the Pexip Artifactory feed. Contact your Pexip account representative if you need access.
-
 <hr>
 
 ## Integration Guide
@@ -148,7 +146,7 @@ PulseOptions.pulse_options_set_sso_provider_callbacks(
     {
         selection_callback = (ref PulseSSOProviderList list, IntPtr _) =>
         {
-            // Accept the first SSO provider
+            // Accept the SSO provider defined by its index, or -1 otherwise
             return 0;
         },
         request_callback = (PulseSSOProviderRequest request, PulseSSOProviderSetToken setToken, IntPtr _) =>
