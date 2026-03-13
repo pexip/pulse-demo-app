@@ -7,7 +7,7 @@ namespace PulseDemoApp.UserControls;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
-using global::Windows.Graphics;
+using Windows.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 

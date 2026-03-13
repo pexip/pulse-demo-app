@@ -6,7 +6,6 @@ namespace PulseDemoApp;
 
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
-using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
 using Windows.ApplicationModel.Activation;
 
