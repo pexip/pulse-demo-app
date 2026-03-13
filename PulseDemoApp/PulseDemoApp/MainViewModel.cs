@@ -7,6 +7,7 @@ using CommunityToolkit.WinUI.Helpers;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Markup;
 using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
@@ -240,14 +241,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
             XamlRoot = xamlRoot,
             Content = new ScrollViewer
             {
-                Content = new TextBlock
+                Content = new ItemsRepeater
                 {
-                    Text = RuntimeHelper.IsMSIX
-                        ? await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/Licenses.txt")))
-                        : await File.ReadAllTextAsync("Assets/Licenses.txt"),
-                    TextWrapping = TextWrapping.Wrap,
-                    IsTextSelectionEnabled = true
-                }
+                    ItemsSource = RuntimeHelper.IsMSIX
+                        ? await FileIO.ReadLinesAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/Licenses.txt")))
+                        : await File.ReadAllLinesAsync("Assets/Licenses.txt"),
+                    ItemTemplate = (DataTemplate)XamlReader.Load(
+                        @"<DataTemplate xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
+                            <TextBlock
+                                Text=""{Binding}""
+                                TextWrapping=""Wrap""
+                                IsTextSelectionEnabled=""True"" />
+                        </DataTemplate>"),
+                },
             }
         }.ShowAsync();
     }
