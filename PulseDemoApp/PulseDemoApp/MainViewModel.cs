@@ -5,6 +5,8 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.WinUI.Helpers;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Pexip.Pulse.NativeEnums;
 using Pexip.Pulse.NativeMethods;
 using Pexip.Pulse.NativeStructs;
@@ -12,8 +14,10 @@ using PulseDemoApp.UserControls;
 using PulseDemoApp.Utilities;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using Windows.Graphics;
+using Windows.Storage;
 
 namespace PulseDemoApp;
 
@@ -223,6 +227,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private async Task LeaveAsync()
     {
         ConferenceCardEnabled = !await LeaveConferenceAsync();
+    }
+
+    [RelayCommand]
+    private async Task DisplayLicensesAsync(XamlRoot xamlRoot)
+    {
+        await new ContentDialog
+        {
+            Title = "Open-Source License Information",
+            PrimaryButtonText = "OK",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = xamlRoot,
+            Content = new ScrollViewer
+            {
+                Content = new TextBlock
+                {
+                    Text = RuntimeHelper.IsMSIX
+                        ? await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/Licenses.txt")))
+                        : await File.ReadAllTextAsync("Assets/Licenses.txt"),
+                    TextWrapping = TextWrapping.Wrap,
+                    IsTextSelectionEnabled = true
+                }
+            }
+        }.ShowAsync();
     }
 
     #endregion

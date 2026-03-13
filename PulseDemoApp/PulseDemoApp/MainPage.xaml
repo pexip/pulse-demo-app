@@ -42,12 +42,14 @@
   </Page.Resources>
 
   <Grid
-    Padding="16"
+    x:Name="GridRoot"
+    Padding="16 8"
     ColumnSpacing="12"
     RowSpacing="12">
     <Grid.RowDefinitions>
       <RowDefinition Height="*" />
       <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="*" />
@@ -302,6 +304,14 @@
         Visibility="{x:Bind ViewModel.ConferenceCardEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}" />
 
     </Grid>
+
+    <HyperlinkButton
+      Grid.Row="2"
+      Grid.ColumnSpan="2"
+      HorizontalAlignment="Right"
+      Command="{x:Bind ViewModel.DisplayLicensesCommand}"
+      CommandParameter="{x:Bind GridRoot.XamlRoot}"
+      Content="Third-Party Licenses" />
 
   </Grid>
 
