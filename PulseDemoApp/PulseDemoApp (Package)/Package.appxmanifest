@@ -1,4 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+﻿<!--
+SPDX-FileCopyrightText: 2026 Copyright 2026 Pexip AS
+
+SPDX-License-Identifier: Apache-2.0
+-->
 
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"

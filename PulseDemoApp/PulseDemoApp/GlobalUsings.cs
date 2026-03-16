@@ -1,6 +1,6 @@
-// <copyright file="GlobalUsings.cs" company="Pexip">
-// Copyright (c) Pexip. All rights reserved.
-// </copyright>
+// SPDX-FileCopyrightText: 2026 Copyright 2026 Pexip AS
+//
+// SPDX-License-Identifier: Apache-2.0
 
 global using System;
 global using System.Linq;

@@ -1,6 +1,6 @@
-// <copyright file="MainViewModel.cs" company="Pexip">
-// Copyright (c) Pexip. All rights reserved.
-// </copyright>
+// SPDX-FileCopyrightText: 2026 Copyright 2026 Pexip AS
+//
+// SPDX-License-Identifier: Apache-2.0
 
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.WinUI.Helpers;
@@ -14,6 +14,7 @@ using Pexip.Pulse.NativeStructs;
 using PulseDemoApp.UserControls;
 using PulseDemoApp.Utilities;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -243,9 +244,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             {
                 Content = new ItemsRepeater
                 {
-                    ItemsSource = RuntimeHelper.IsMSIX
-                        ? await FileIO.ReadLinesAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/Licenses.txt")))
-                        : await File.ReadAllLinesAsync("Assets/Licenses.txt"),
+                    ItemsSource = new ObservableCollection<string>(
+                        RuntimeHelper.IsMSIX
+                            ? await FileIO.ReadLinesAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/Licenses.txt")))
+                            : await File.ReadAllLinesAsync("Assets/Licenses.txt")),
                     ItemTemplate = (DataTemplate)XamlReader.Load(
                         @"<DataTemplate xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">
                             <TextBlock

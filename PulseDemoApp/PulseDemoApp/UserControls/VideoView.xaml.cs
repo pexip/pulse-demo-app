@@ -1,6 +1,6 @@
-// <copyright file="VideoView.xaml.cs" company="Pexip">
-// Copyright (c) Pexip. All rights reserved.
-// </copyright>
+// SPDX-FileCopyrightText: 2026 Copyright 2026 Pexip AS
+//
+// SPDX-License-Identifier: Apache-2.0
 
 namespace PulseDemoApp.UserControls;
 

@@ -1,6 +1,6 @@
-﻿// <copyright file="Program.cs" company="Pexip">
-// Copyright (c) Pexip. All rights reserved.
-// </copyright>
+﻿// SPDX-FileCopyrightText: 2026 Copyright 2026 Pexip AS
+//
+// SPDX-License-Identifier: Apache-2.0
 
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
