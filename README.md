@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Copyright 2026 Pexip AS
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <img align="left" width="116" height="116" src="https://docs.pexip.com/Resources/Images/generic/pexip_favicon.png" />
 
 # Pexip Pulse Demo App
