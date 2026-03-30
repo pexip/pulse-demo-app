@@ -27,6 +27,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread();
     private readonly IntPtr pulseInstance = PulseConnect.pulse_new();
+    
+    private PulseRegistrationStatusCallbackConfig registrationStateCallback;
+    private PulseSSOProviderCallbackConfig ssoProviderCallback;
+    private PulseAsyncOperationResultCallbackConfig registerResultCallback;
+    private PulseOperationProgressCallbackConfig registerProgressCallback;
+    private PulseConferenceStatusCallbackConfig conferenceStateCallback;
+    private PulseAsyncOperationResultCallbackConfig connectResultCallback;
+    private PulseOperationProgressCallbackConfig connectProgressCallback;
+    private PulseAsyncOperationResultCallbackConfig disconnectResultCallback;
+    private PulseOperationProgressCallbackConfig disconnectProgressCallback;
+
     private enum CardType
     {
         Registration,
@@ -301,43 +312,61 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         var promise = new TaskCompletionSource<bool>();
 
-        // Set registration events callbacks
+        this.registrationStateCallback = new PulseRegistrationStatusCallbackConfig
+        {
+            func = (status_info, user_context) =>
+            {
+                if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
+                {
+                    promise.TrySetResult(true);
+                }
+            }
+        };
         ReportError(
             PulseOptions.pulse_options_set_registration_state_callback(
                 this.pulseInstance,
-                new PulseRegistrationStatusCallbackConfig
-                {
-                    func = (status_info, user_context) =>
-                    {
-                        if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
-                        {
-                            promise.TrySetResult(true);
-                        }
-                    }
-                }),
+                this.registrationStateCallback),
             CardType.Registration);
-
-        // Set SSO callbacks
+        
+        this.ssoProviderCallback = new PulseSSOProviderCallbackConfig
+        {
+            selection_callback = (ref PulseSSOProviderList list, IntPtr user_context) =>
+            {
+                var providers = list.providers.ToStructs<PulseSSOProvider>(list.num, false);
+                bool accepted = true; // Waiting for the user to accept the ssoProvider(s)
+                return accepted ? 0 : -1;
+            },
+            request_callback = (PulseSSOProviderRequest request, PulseSSOProviderSetToken setToken, IntPtr user_context) =>
+            {
+                string? ssoToken = RequestSSOToken(new Uri(request.url)); // Trigger a SSO token request
+                return ssoToken is string token && setToken.func(setToken.context, token);
+            },
+        };
         ReportError(
             PulseOptions.pulse_options_set_sso_provider_callbacks(
                 this.pulseInstance,
-                new PulseSSOProviderCallbackConfig
-                {
-                    selection_callback = (ref PulseSSOProviderList list, IntPtr user_context) =>
-                    {
-                        var providers = list.providers.ToStructs<PulseSSOProvider>(list.num, false);
-                        bool accepted = true; // Waiting for the user to accept the ssoProvider(s)
-                        return accepted ? 0 : -1;
-                    },
-                    request_callback = (PulseSSOProviderRequest request, PulseSSOProviderSetToken setToken, IntPtr user_context) =>
-                    {
-                        string? ssoToken = RequestSSOToken(new Uri(request.url)); // Trigger a SSO token request
-                        return ssoToken is string token && setToken.func(setToken.context, token);
-                    },
-                }),
+                this.ssoProviderCallback),
             CardType.Registration);
 
-        // Register
+        this.registerResultCallback = new PulseAsyncOperationResultCallbackConfig
+        {
+            func = (err, user_context) =>
+            {
+                if (err != PulseErrorType.PULSE_SUCCESS)
+                {
+                    ReportError(err, CardType.Registration);
+                    promise.TrySetResult(false);
+                }
+            }
+        };
+        this.registerProgressCallback = new PulseOperationProgressCallbackConfig
+        {
+            func = (progress_info, user_context) =>
+            {
+                var info = progress_info.ToStruct<PulseOperationProgressInfo>();
+                this.dispatcherQueue.TryEnqueue(() => RegistrationCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
+            }
+        };
         PulseErrorType error = PulseRegistration.pulse_register_async(
             this.pulseInstance,
             new PulseRegistrationRequest
@@ -346,25 +375,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 host = VideoAddress[(VideoAddress.IndexOf('@') + 1)..],
                 use_sso = true,
             },
-            new PulseAsyncOperationResultCallbackConfig
-            {
-                func = (err, user_context) =>
-                {
-                    if (err != PulseErrorType.PULSE_SUCCESS)
-                    {
-                        ReportError(err, CardType.Registration);
-                        promise.TrySetResult(false);
-                    }
-                }
-            },
-            new PulseOperationProgressCallbackConfig
-            {
-                func = (progress_info, user_context) =>
-                {
-                    var info = progress_info.ToStruct<PulseOperationProgressInfo>();
-                    this.dispatcherQueue.TryEnqueue(() => RegistrationCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
-                }
-            });
+            this.registerResultCallback,
+            this.registerProgressCallback);
 
         var success = error is PulseErrorType.PULSE_SUCCESS && await promise.Task.ConfigureAwait(false);
 
@@ -404,21 +416,39 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         var promise = new TaskCompletionSource<bool>();
 
-        // Set conference events callbacks
+        this.conferenceStateCallback = new PulseConferenceStatusCallbackConfig
+        {
+            func = (status_info, user_context) =>
+            {
+                if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
+                {
+                    promise.TrySetResult(true);
+                }
+            },
+        };
         PulseOptions.pulse_options_set_conference_state_callback(
             this.pulseInstance,
-            new PulseConferenceStatusCallbackConfig
-            {
-                func = (status_info, user_context) =>
-                {
-                    if (status_info.status == PulseConnectionStatus.PULSE_CONNECTION_STATUS_CONNECTED)
-                    {
-                        promise.TrySetResult(true);
-                    }
-                },
-            });
+            this.conferenceStateCallback);
 
-        // Connect
+        this.connectResultCallback = new PulseAsyncOperationResultCallbackConfig
+        {
+            func = (err, user_context) =>
+            {
+                if (err != PulseErrorType.PULSE_SUCCESS)
+                {
+                    ReportError(err, CardType.Join);
+                    promise.TrySetResult(false);
+                }
+            },
+        };
+        this.connectProgressCallback = new PulseOperationProgressCallbackConfig
+        {
+            func = (progress_info, user_context) =>
+            {
+                var info = progress_info.ToStruct<PulseOperationProgressInfo>();
+                this.dispatcherQueue.TryEnqueue(() => JoinCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
+            },
+        };
         var error = PulseConnect.pulse_connect_with_rest_async(
             this.pulseInstance,
             new PulseRestConnectionConfig
@@ -428,25 +458,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 conference_name = VideoAlias,
                 pin_code = PinCode,
             },
-            new PulseAsyncOperationResultCallbackConfig
-            {
-                func = (err, user_context) =>
-                {
-                    if (err != PulseErrorType.PULSE_SUCCESS)
-                    {
-                        ReportError(err, CardType.Join);
-                        promise.TrySetResult(false);
-                    }
-                },
-            },
-            new PulseOperationProgressCallbackConfig
-            {
-                func = (progress_info, user_context) =>
-                {
-                    var info = progress_info.ToStruct<PulseOperationProgressInfo>();
-                    this.dispatcherQueue.TryEnqueue(() => JoinCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
-                },
-            });
+            this.connectResultCallback,
+            this.connectProgressCallback);
 
         return error is PulseErrorType.PULSE_SUCCESS && await promise.Task.ConfigureAwait(false);
     }
@@ -455,34 +468,35 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         var promise = new TaskCompletionSource<bool>();
 
-        // Disconnect
+        this.disconnectResultCallback = new PulseAsyncOperationResultCallbackConfig
+        {
+            func = (err, user_context) =>
+            {
+                if (err != PulseErrorType.PULSE_SUCCESS)
+                {
+                    ReportError(err, CardType.Conference);
+                    promise.TrySetResult(false);
+                }
+                else
+                {
+                    this.dispatcherQueue.TryEnqueue(() => ConferenceCardLogs = string.Empty);
+                    this.dispatcherQueue.TryEnqueue(() => JoinCardLogs = string.Empty);
+                    promise.TrySetResult(true);
+                }
+            }
+        };
+        this.disconnectProgressCallback = new PulseOperationProgressCallbackConfig
+        {
+            func = (progress_info, user_context) =>
+            {
+                var info = progress_info.ToStruct<PulseOperationProgressInfo>();
+                this.dispatcherQueue.TryEnqueue(() => ConferenceCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
+            }
+        };
         var error = PulseConnect.pulse_disconnect_async(
             this.pulseInstance,
-            new PulseAsyncOperationResultCallbackConfig
-            {
-                func = (err, user_context) =>
-                {
-                    if (err != PulseErrorType.PULSE_SUCCESS)
-                    {
-                        ReportError(err, CardType.Conference);
-                        promise.TrySetResult(false);
-                    }
-                    else
-                    {
-                        this.dispatcherQueue.TryEnqueue(() => ConferenceCardLogs = string.Empty);
-                        this.dispatcherQueue.TryEnqueue(() => JoinCardLogs = string.Empty);
-                        promise.TrySetResult(true);
-                    }
-                }
-            },
-            new PulseOperationProgressCallbackConfig
-            {
-                func = (progress_info, user_context) =>
-                {
-                    var info = progress_info.ToStruct<PulseOperationProgressInfo>();
-                    this.dispatcherQueue.TryEnqueue(() => ConferenceCardLogs = $"{info.progress:P0} {info.desc}"); // Report Progress
-                }
-            });
+            this.disconnectResultCallback,
+            this.disconnectProgressCallback);
 
         return error is PulseErrorType.PULSE_SUCCESS && await promise.Task.ConfigureAwait(false);
     }
